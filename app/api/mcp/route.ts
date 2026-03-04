@@ -190,4 +190,21 @@ const handler = createMcpHandler(
   }
 );
 
-export { handler as GET, handler as POST, handler as DELETE };
+// Wrap with error logging so we can see what's crashing on Vercel
+async function wrappedHandler(req: Request): Promise<Response> {
+  try {
+    return await handler(req);
+  } catch (error) {
+    console.error("MCP handler error:", error);
+    return new Response(
+      JSON.stringify({
+        error: "internal_error",
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+export { wrappedHandler as GET, wrappedHandler as POST, wrappedHandler as DELETE };
