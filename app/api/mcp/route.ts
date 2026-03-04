@@ -187,6 +187,7 @@ const handler = createMcpHandler(
     maxDuration: 60,
     disableSse: true,
     verboseLogs: true,
+    sessionIdGenerator: undefined,
   }
 );
 
