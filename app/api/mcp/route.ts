@@ -186,6 +186,7 @@ const handler = createMcpHandler(
     basePath: "/api",
     maxDuration: 60,
     disableSse: true,
+    verboseLogs: true,
   }
 );
 
@@ -211,4 +212,6 @@ const verifyToken = async (
 
 const authHandler = withMcpAuth(handler, verifyToken, { required: true });
 
-export { authHandler as GET, authHandler as POST, authHandler as DELETE };
+// Use auth when BRAIN_API_KEY is set, raw handler otherwise (dev mode)
+const finalHandler = process.env.BRAIN_API_KEY ? authHandler : handler;
+export { finalHandler as GET, finalHandler as POST, finalHandler as DELETE };
