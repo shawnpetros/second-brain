@@ -1,0 +1,39 @@
+# Research artifacts (not part of the project)
+research/
+
+# Audio/video source files (large, not versioned)
+input/
+output/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+.vercel/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase local
+supabase/.temp/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
