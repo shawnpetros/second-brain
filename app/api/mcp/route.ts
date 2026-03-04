@@ -1,4 +1,4 @@
-import { createMcpHandler, withMcpAuth } from "mcp-handler";
+import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import {
   capture,
@@ -190,28 +190,29 @@ const handler = createMcpHandler(
   }
 );
 
-// Bearer token auth — set BRAIN_API_KEY in Vercel env vars
-// Clients send Authorization: Bearer <token>
-const verifyToken = async (
-  _req: Request,
-  bearerToken?: string
-) => {
-  const apiKey = process.env.BRAIN_API_KEY;
+// Simple bearer token auth wrapper
+function withAuth(
+  mcpHandler: (req: Request) => Promise<Response>
+): (req: Request) => Promise<Response> {
+  return async (req: Request) => {
+    const apiKey = process.env.BRAIN_API_KEY;
 
-  // If no BRAIN_API_KEY is set, allow unauthenticated access (dev mode)
-  if (!apiKey) return { token: "dev", scopes: ["read", "write"], clientId: "dev" };
+    // No BRAIN_API_KEY set = dev mode, skip auth
+    if (apiKey) {
+      const auth = req.headers.get("authorization");
+      const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
 
-  if (!bearerToken || bearerToken !== apiKey) return undefined;
+      if (!token || token !== apiKey) {
+        return new Response(
+          JSON.stringify({ error: "unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
 
-  return {
-    token: bearerToken,
-    scopes: ["read", "write"],
-    clientId: "owner",
+    return mcpHandler(req);
   };
-};
+}
 
-const authHandler = withMcpAuth(handler, verifyToken, { required: true });
-
-// Use auth when BRAIN_API_KEY is set, raw handler otherwise (dev mode)
-const finalHandler = process.env.BRAIN_API_KEY ? authHandler : handler;
-export { finalHandler as GET, finalHandler as POST, finalHandler as DELETE };
+const authedHandler = withAuth(handler);
+export { authedHandler as GET, authedHandler as POST, authedHandler as DELETE };
