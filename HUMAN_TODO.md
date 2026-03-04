@@ -6,14 +6,16 @@ Items that require manual human action to complete the Open Brain setup.
 
 ## Decision Log
 
-### Infrastructure Choice: Neon Postgres (via Vercel) — NOT Supabase
+### Infrastructure: Neon Postgres (via Vercel) — NOT Supabase
 
 Your mealsgpt.com project already uses Neon + Drizzle + Vercel with pgvector (1536-dim embeddings, HNSW indexes). Using the same stack for the brain means:
 - No new account to create (use your existing Vercel/Neon setup)
 - Same ORM, same patterns, same deployment pipeline
 - One less vendor relationship to manage
 
-For the initial build, the MCP server handles everything locally — no deployed API needed. It connects directly to Neon Postgres, generates embeddings via OpenAI, extracts metadata via GPT-4o-mini, and writes to the DB. A Vercel API route only becomes necessary when you add Slack capture (Phase 3).
+### Auth: Bearer Token (not full OAuth 2.1)
+
+For a single-user personal brain, bearer token auth is the pragmatic choice. Set `BRAIN_API_KEY` in Vercel env vars and configure the same token in your MCP clients. OAuth 2.1 can be added later if you want multi-user support or need a more formal auth flow.
 
 ---
 
@@ -22,7 +24,7 @@ For the initial build, the MCP server handles everything locally — no deployed
 - [ ] **Create a new Neon database for the brain**
   - Option A: Create a new database in your existing Neon project (Vercel dashboard → Storage → your Postgres → create a new database named `brain`)
   - Option B: Create a separate Neon project for isolation (Vercel dashboard → Storage → Create Database)
-  - Either works. Option A is simpler. Option B is cleaner if you want independent billing/limits.
+  - Either works. Option A is simpler.
 
 - [ ] **Run schema migration**
   - Get the connection string from Vercel dashboard → Storage → Postgres → `.env.local` tab
@@ -31,29 +33,40 @@ For the initial build, the MCP server handles everything locally — no deployed
 
 - [ ] **Ensure you have an OpenAI API key**
   - You likely already have one from mealsgpt.com
-  - Check your existing `.env` files or [platform.openai.com](https://platform.openai.com) → API keys
   - Needs access to: `text-embedding-3-small` and `gpt-4o-mini`
 
-## Phase 2: MCP Server Activation
+## Phase 2: Deploy Remote Brain (Vercel)
+
+- [ ] **Link Vercel project**
+  - Run: `vercel link` or connect the GitHub repo in Vercel dashboard
+  - The Next.js app is ready to deploy as-is
+
+- [ ] **Set environment variables in Vercel**
+  - `DATABASE_URL` — Neon connection string
+  - `OPENAI_API_KEY` — your OpenAI key
+  - `BRAIN_API_KEY` — generate with `openssl rand -base64 32` (protects your MCP endpoint)
+
+- [ ] **Deploy**
+  - Push to GitHub or run `vercel deploy --prod`
+  - Verify: visit `https://your-app.vercel.app/` — should show the landing page
+
+- [ ] **Connect MCP clients**
+  - Claude Code: `claude mcp add open-brain --transport http https://your-app.vercel.app/api/mcp`
+  - Claude Desktop / ChatGPT / Cursor: add as remote MCP server with the URL above + bearer token auth
+
+## Phase 3: Local Python Server (optional, for Claude Code stdio)
 
 - [ ] **Create `.env` file** in `src/mcp-server/`
   - Copy `.env.example` → `.env`
-  - Fill in `DATABASE_URL` (Neon connection string) and `OPENAI_API_KEY`
+  - Fill in `DATABASE_URL` and `OPENAI_API_KEY`
 
 - [ ] **Install Python dependencies**
   - Run: `cd src/mcp-server && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
 
-- [ ] **Register MCP server in Claude Code**
-  - The setup script will attempt this automatically
-  - If it fails, manually add to your Claude config (instructions in `src/mcp-server/README.md`)
+- [ ] **Register local MCP server in Claude Code**
+  - See `src/mcp-server/README.md` for instructions
 
-- [ ] **Test it**
-  - Restart Claude Code
-  - Ask Claude: "capture this thought: Testing my open brain system for the first time"
-  - Then: "search my brain for testing"
-  - If both work, you're live.
-
-## Phase 3: Slack Capture (later — after core is working)
+## Phase 4: Slack Capture (later — after core is working)
 
 - [ ] **Create Slack app** at [api.slack.com/apps](https://api.slack.com/apps)
 - [ ] **Deploy Vercel API route** for webhook endpoint

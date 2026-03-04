@@ -18,8 +18,9 @@ venv/
 .env.local
 .env.*.local
 
-# Node
+# Node / Next.js
 node_modules/
+.next/
 .vercel/
 
 # Claude Code
@@ -29,8 +30,11 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Supabase local
-supabase/.temp/
+# Non-project files in root (research PDFs, etc.)
+*.pdf
+EBOOK_RUBRIC_AND_OUTLINE.md
+LANDING_PAGE_SPEC.md
+MARKETING_RESEARCH_GUIDE.md
 
 # IDE
 .idea/
