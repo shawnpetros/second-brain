@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "open-brain": {
+      "type": "http",
+      "url": "https://second-brain.shawnpetros.com/api/mcp"
+    }
+  }
+}

@@ -190,29 +190,4 @@ const handler = createMcpHandler(
   }
 );
 
-// Simple bearer token auth wrapper
-function withAuth(
-  mcpHandler: (req: Request) => Promise<Response>
-): (req: Request) => Promise<Response> {
-  return async (req: Request) => {
-    const apiKey = process.env.BRAIN_API_KEY;
-
-    // No BRAIN_API_KEY set = dev mode, skip auth
-    if (apiKey) {
-      const auth = req.headers.get("authorization");
-      const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-
-      if (!token || token !== apiKey) {
-        return new Response(
-          JSON.stringify({ error: "unauthorized" }),
-          { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    return mcpHandler(req);
-  };
-}
-
-const authedHandler = withAuth(handler);
-export { authedHandler as GET, authedHandler as POST, authedHandler as DELETE };
+export { handler as GET, handler as POST, handler as DELETE };
