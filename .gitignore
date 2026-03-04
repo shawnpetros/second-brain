@@ -41,3 +41,5 @@ MARKETING_RESEARCH_GUIDE.md
 .vscode/
 *.swp
 *.swo
+.vercel
+.env*.local
