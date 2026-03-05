@@ -1,4 +1,5 @@
-import { createMcpHandler } from "mcp-handler";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import {
   capture,
@@ -10,202 +11,112 @@ import {
   deleteThought,
 } from "@/lib/brain/tools";
 
-const handler = createMcpHandler(
-  (server) => {
-    server.registerTool(
-      "capture",
-      {
-        title: "Capture Thought",
-        description:
-          "Capture a new thought into your brain. Generates an embedding and extracts metadata automatically.",
-        inputSchema: z.object({
-          text: z
-            .string()
-            .describe(
-              "The thought, note, decision, or insight to capture."
-            ),
-          source: z
-            .string()
-            .default("mcp")
-            .describe(
-              'Where this thought came from. Options: mcp, cli, slack, migration.'
-            ),
-        }),
-      },
-      async ({ text, source }) => ({
-        content: [{ type: "text", text: await capture(text, source) }],
-      })
-    );
+function createServer(): McpServer {
+  const server = new McpServer(
+    { name: "open-brain", version: "0.1.0" },
+    { capabilities: { tools: { listChanged: true } } }
+  );
 
-    server.registerTool(
-      "semantic_search",
-      {
-        title: "Semantic Search",
-        description:
-          "Search your brain by meaning. Finds thoughts semantically similar to your query, not just keyword matches.",
-        inputSchema: z.object({
-          query: z
-            .string()
-            .describe("What you're looking for, described naturally."),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .default(10)
-            .describe("Maximum number of results to return."),
-        }),
-      },
-      async ({ query, limit }) => ({
-        content: [
-          { type: "text", text: await semanticSearch(query, limit) },
-        ],
-      })
-    );
+  server.tool(
+    "capture",
+    "Capture a new thought into your brain. Generates an embedding and extracts metadata automatically.",
+    {
+      text: z.string().describe("The thought, note, decision, or insight to capture."),
+      source: z.string().default("mcp").describe("Where this thought came from."),
+    },
+    async ({ text, source }) => ({
+      content: [{ type: "text" as const, text: await capture(text, source) }],
+    })
+  );
 
-    server.registerTool(
-      "search_by_person",
-      {
-        title: "Search by Person",
-        description: "Find all thoughts that mention a specific person.",
-        inputSchema: z.object({
-          name: z
-            .string()
-            .describe(
-              "The person's name to search for (case-insensitive partial match)."
-            ),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .default(10)
-            .describe("Maximum number of results."),
-        }),
-      },
-      async ({ name, limit }) => ({
-        content: [
-          { type: "text", text: await searchByPerson(name, limit) },
-        ],
-      })
-    );
+  server.tool(
+    "semantic_search",
+    "Search your brain by meaning. Finds thoughts semantically similar to your query.",
+    {
+      query: z.string().describe("What you're looking for, described naturally."),
+      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+    },
+    async ({ query, limit }) => ({
+      content: [{ type: "text" as const, text: await semanticSearch(query, limit) }],
+    })
+  );
 
-    server.registerTool(
-      "search_by_topic",
-      {
-        title: "Search by Topic",
-        description: "Find all thoughts tagged with a specific topic.",
-        inputSchema: z.object({
-          topic: z
-            .string()
-            .describe(
-              "The topic to search for (case-insensitive partial match)."
-            ),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .default(10)
-            .describe("Maximum number of results."),
-        }),
-      },
-      async ({ topic, limit }) => ({
-        content: [
-          { type: "text", text: await searchByTopic(topic, limit) },
-        ],
-      })
-    );
+  server.tool(
+    "search_by_person",
+    "Find all thoughts that mention a specific person.",
+    {
+      name: z.string().describe("Person's name (case-insensitive partial match)."),
+      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+    },
+    async ({ name, limit }) => ({
+      content: [{ type: "text" as const, text: await searchByPerson(name, limit) }],
+    })
+  );
 
-    server.registerTool(
-      "list_recent",
-      {
-        title: "List Recent",
-        description: "List recently captured thoughts.",
-        inputSchema: z.object({
-          days: z
-            .number()
-            .int()
-            .min(1)
-            .max(365)
-            .default(7)
-            .describe("How many days back to look."),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(100)
-            .default(20)
-            .describe("Maximum number of results."),
-        }),
-      },
-      async ({ days, limit }) => ({
-        content: [{ type: "text", text: await listRecent(days, limit) }],
-      })
-    );
+  server.tool(
+    "search_by_topic",
+    "Find all thoughts tagged with a specific topic.",
+    {
+      topic: z.string().describe("Topic to search for (case-insensitive partial match)."),
+      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+    },
+    async ({ topic, limit }) => ({
+      content: [{ type: "text" as const, text: await searchByTopic(topic, limit) }],
+    })
+  );
 
-    server.registerTool(
-      "stats",
-      {
-        title: "Brain Stats",
-        description:
-          "View your brain's statistics: capture frequency, topic distribution, and patterns.",
-        inputSchema: z.object({
-          days: z
-            .number()
-            .int()
-            .min(1)
-            .max(365)
-            .default(30)
-            .describe("How many days to analyze."),
-        }),
-      },
-      async ({ days }) => ({
-        content: [{ type: "text", text: await stats(days) }],
-      })
-    );
+  server.tool(
+    "list_recent",
+    "List recently captured thoughts.",
+    {
+      days: z.number().int().min(1).max(365).default(7).describe("How many days back."),
+      limit: z.number().int().min(1).max(100).default(20).describe("Maximum results."),
+    },
+    async ({ days, limit }) => ({
+      content: [{ type: "text" as const, text: await listRecent(days, limit) }],
+    })
+  );
 
-    server.registerTool(
-      "delete_thought",
-      {
-        title: "Delete Thought",
-        description: "Delete a thought from your brain by its ID.",
-        inputSchema: z.object({
-          thought_id: z.string().uuid().describe("The UUID of the thought to delete."),
-        }),
-      },
-      async ({ thought_id }) => ({
-        content: [
-          { type: "text", text: await deleteThought(thought_id) },
-        ],
-      })
-    );
-  },
-  { serverInfo: { name: "open-brain", version: "0.1.0" } },
-  {
-    basePath: "/api",
-    maxDuration: 60,
-    disableSse: true,
-    verboseLogs: true,
-    sessionIdGenerator: undefined,
-  }
-);
+  server.tool(
+    "stats",
+    "View your brain's statistics: capture frequency, topic distribution, and patterns.",
+    {
+      days: z.number().int().min(1).max(365).default(30).describe("Days to analyze."),
+    },
+    async ({ days }) => ({
+      content: [{ type: "text" as const, text: await stats(days) }],
+    })
+  );
 
-// Wrap with error logging so we can see what's crashing on Vercel
-async function wrappedHandler(req: Request): Promise<Response> {
-  try {
-    return await handler(req);
-  } catch (error) {
-    console.error("MCP handler error:", error);
-    return new Response(
-      JSON.stringify({
-        error: "internal_error",
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  server.tool(
+    "delete_thought",
+    "Delete a thought from your brain by its ID.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the thought to delete."),
+    },
+    async ({ thought_id }) => ({
+      content: [{ type: "text" as const, text: await deleteThought(thought_id) }],
+    })
+  );
+
+  return server;
 }
 
-export { wrappedHandler as GET, wrappedHandler as POST, wrappedHandler as DELETE };
+export async function POST(req: Request) {
+  // Fresh server + transport per request — stateless, serverless-safe
+  const server = createServer();
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  await server.connect(transport);
+  return transport.handleRequest(req);
+}
+
+export async function GET() {
+  return new Response("Open Brain MCP Server", { status: 200 });
+}
+
+export async function DELETE() {
+  return new Response(null, { status: 405 });
+}
