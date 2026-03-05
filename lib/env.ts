@@ -18,7 +18,10 @@ export const env = {
   get OPENAI_API_KEY() {
     return required("OPENAI_API_KEY");
   },
-  get BRAIN_API_KEY() {
-    return optional("BRAIN_API_KEY");
+  get CLERK_SECRET_KEY() {
+    return required("CLERK_SECRET_KEY");
+  },
+  get NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY() {
+    return required("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
   },
 };

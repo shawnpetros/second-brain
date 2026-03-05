@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
+import { verifyMcpAuth } from "@/lib/auth/mcp-auth";
 import {
   capture,
   semanticSearch,
@@ -103,6 +104,10 @@ function createServer(): McpServer {
 }
 
 export async function POST(req: Request) {
+  // Verify Clerk OAuth token — returns 401 with WWW-Authenticate if missing/invalid
+  const authResult = await verifyMcpAuth(req);
+  if (authResult instanceof Response) return authResult;
+
   // Fresh server + transport per request — stateless, serverless-safe
   const server = createServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
@@ -110,7 +115,7 @@ export async function POST(req: Request) {
   });
 
   await server.connect(transport);
-  return transport.handleRequest(req);
+  return transport.handleRequest(req, { authInfo: authResult });
 }
 
 export async function GET() {

@@ -13,10 +13,11 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@clerk/mcp-tools": "^0.3.1",
+    "@clerk/nextjs": "^7.0.1",
     "@modelcontextprotocol/sdk": "^1.27.0",
     "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.31.4",
-    "mcp-handler": "^1.0.7",
     "next": "^15.2.0",
     "openai": "^4.80.0",
     "react": "^19.0.0",
@@ -27,12 +28,15 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "drizzle-kit": "^0.22.8",
     "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.22.8",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }
