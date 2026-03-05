@@ -23,6 +23,7 @@ export const thoughts = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    status: text("status").notNull().default("untriaged"),
     source: text("source").notNull().default("manual"),
     sourceRef: text("source_ref"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -38,6 +39,7 @@ export const thoughts = pgTable(
       table.embedding.op("vector_cosine_ops")
     ),
     typeIdx: index("thoughts_type_idx").on(table.thoughtType),
+    statusIdx: index("thoughts_status_idx").on(table.status),
     createdIdx: index("thoughts_created_idx").on(table.createdAt),
   })
 );
