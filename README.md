@@ -28,7 +28,7 @@ Just vibes. Semantic vibes. 🫠
 ```
  you: "remind me about that conversation with Alex about the API redesign"
                                    |
-                                    v
+                                  v
                     ╔══════════════════════════════╗
                     ║  🔮 semantic search          ║
                     ║  pgvector cosine similarity  ║
