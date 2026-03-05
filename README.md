@@ -65,6 +65,7 @@ No exotic dependencies. No "run these 47 Docker containers" energy. No Kubernete
 | **Neon Postgres** + **pgvector** | Your thoughts, vectorized and indexed. HNSW, cosine similarity, 1536 dimensions. The good stuff. |
 | **OpenAI** | `text-embedding-3-small` for embeddings, `gpt-4o-mini` for metadata extraction. Cheap and fast. |
 | **Next.js** on **Vercel** | MCP server deployed as a serverless API route. Push to deploy. Touch grass. |
+| **Clerk** | OAuth 2.1 authentication. Browser-based login. No API keys floating around in configs. |
 | **MCP** | Streamable HTTP transport. Works with Claude, ChatGPT, Cursor, Windsurf, VS Code, your toaster (probably). |
 
 There's also a local Python MCP server in `src/mcp-server/` if you prefer stdio transport. Old school. Respect. 🤝
@@ -80,6 +81,7 @@ It's easier than you think. You literally just need a database and two API keys.
 - 🐘 A [Neon](https://neon.tech) Postgres database (free tier works, we're not animals)
 - 🔑 An [OpenAI](https://platform.openai.com) API key
 - ▲ A [Vercel](https://vercel.com) account
+- 🔐 A [Clerk](https://clerk.com) account (free tier is fine — it's just you in there)
 - 📦 Node.js 20+ and pnpm
 
 ### 1. Clone It
@@ -106,14 +108,22 @@ That's it. One table. Some indexes. A trigger. We're not building an ERP here.
 cp .env.example .env.local
 ```
 
-Fill in your `DATABASE_URL`, `OPENAI_API_KEY`, and a `BRAIN_API_KEY`:
+Fill in your `DATABASE_URL` and `OPENAI_API_KEY`. Then set up Clerk 👇
 
-```bash
-# generate a brain key (it's just a random secret, not that deep)
-openssl rand -base64 32
-```
+### 4. Set Up Auth (Clerk OAuth 2.1)
 
-### 4. Ship It
+Your brain is protected by OAuth 2.1 via Clerk. Nobody gets in without logging in through the browser first. Here's the setup:
+
+1. **Create a Clerk app** at [clerk.com](https://clerk.com) (or reuse an existing one)
+2. Grab your **API keys** from the Clerk Dashboard → API Keys:
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (`pk_test_...`)
+   - `CLERK_SECRET_KEY` (`sk_test_...`)
+3. **Enable Dynamic Client Registration** — Clerk Dashboard → Configure → OAuth Applications → flip it on. This lets MCP clients (Claude Code, Cursor, etc.) register themselves automatically during the OAuth discovery flow. No manual app creation needed.
+4. Add both keys to your `.env.local` and your Vercel environment variables
+
+> 💡 **Dev keys vs Production keys:** Dev keys (`pk_test_` / `sk_test_`) use Clerk's `*.clerk.accounts.dev` domain and work out of the box — no DNS setup required. Production keys need a `clerk.<your-domain>` CNAME record pointing to `frontend-api.clerk.dev`. For a personal brain, dev keys are totally fine.
+
+### 5. Ship It
 
 ```bash
 vercel deploy
@@ -121,7 +131,7 @@ vercel deploy
 
 Or just push to GitHub and let Vercel auto-deploy. It's 2026, we don't manually deploy anymore. Go outside. 🌳
 
-### 5. Plug In Your Brain
+### 6. Plug In Your Brain
 
 Add the MCP server to your AI client of choice. The URL is:
 
@@ -134,7 +144,15 @@ https://your-app.vercel.app/api/mcp
 claude mcp add open-brain --transport http https://your-app.vercel.app/api/mcp
 ```
 
-**Claude Desktop / ChatGPT / Cursor:** Add as a remote MCP server in settings. If you set a `BRAIN_API_KEY`, pop that in as the bearer token.
+When you first connect, Claude Code will:
+1. Hit the MCP endpoint → get a 401
+2. Discover the OAuth metadata automatically
+3. Open a browser window for you to sign in via Clerk
+4. Complete the OAuth flow and authenticate 🔐
+
+No API keys to copy-paste. No bearer tokens. Just click and sign in.
+
+**Claude Desktop / ChatGPT / Cursor:** Add as a remote MCP server in settings. Same OAuth flow — it'll prompt you to authenticate in the browser.
 
 **That's it. You have a second brain now.** Go capture some thoughts. Tell it about your day. Ask it what you were thinking about last Tuesday. Live your best centaur life. 🐴🧑
 
