@@ -10,6 +10,9 @@ import {
   listRecent,
   stats,
   deleteThought,
+  listTasks,
+  completeTask,
+  skipTask,
 } from "@/lib/brain/tools";
 
 function createServer(): McpServer {
@@ -97,6 +100,43 @@ function createServer(): McpServer {
     },
     async ({ thought_id }) => ({
       content: [{ type: "text" as const, text: await deleteThought(thought_id) }],
+    })
+  );
+
+  server.tool(
+    "list_tasks",
+    "List tasks (action_item thoughts) filtered by status. Use this to surface untriaged tasks at session start or review active/completed tasks.",
+    {
+      status: z
+        .enum(["untriaged", "active", "completed", "skipped"])
+        .default("untriaged")
+        .describe("Filter tasks by status."),
+      limit: z.number().int().min(1).max(100).default(20).describe("Maximum results."),
+    },
+    async ({ status, limit }) => ({
+      content: [{ type: "text" as const, text: await listTasks(status, limit) }],
+    })
+  );
+
+  server.tool(
+    "complete_task",
+    "Mark a task as completed. Non-destructive — the thought is kept but marked done.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the action_item to complete."),
+    },
+    async ({ thought_id }) => ({
+      content: [{ type: "text" as const, text: await completeTask(thought_id) }],
+    })
+  );
+
+  server.tool(
+    "skip_task",
+    "Skip a task for now — moves it from untriaged to active so it won't appear in triage but stays on your radar.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the action_item to skip."),
+    },
+    async ({ thought_id }) => ({
+      content: [{ type: "text" as const, text: await skipTask(thought_id) }],
     })
   );
 

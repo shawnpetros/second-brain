@@ -11,6 +11,7 @@ interface ThoughtRow {
   id: string;
   raw_text: string;
   thought_type: string;
+  status: string;
   people: string[];
   topics: string[];
   action_items: string[];
@@ -21,8 +22,9 @@ interface ThoughtRow {
 function formatThought(row: ThoughtRow): string {
   const type = row.thought_type.replace(/_/g, " ");
   const date = new Date(row.created_at).toISOString().slice(0, 16).replace("T", " ");
+  const statusLabel = row.status && row.status !== "untriaged" ? ` [${row.status}]` : "";
   const parts = [
-    `**${type.charAt(0).toUpperCase() + type.slice(1)}** — ${date}`,
+    `**${type.charAt(0).toUpperCase() + type.slice(1)}**${statusLabel} — ${date}`,
     `  ${row.raw_text}`,
   ];
   if (row.people?.length) parts.push(`  People: ${row.people.join(", ")}`);
@@ -40,9 +42,11 @@ export async function capture(text: string, source = "mcp"): Promise<string> {
     extractMetadata(text),
   ]);
 
+  const status = metadata.thought_type === "action_item" ? "untriaged" : "active";
+
   const rows = await sql()`
-    INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source)
-    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${metadata.thought_type}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source})
+    INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source, status)
+    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${metadata.thought_type}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source}, ${status})
     RETURNING id, thought_type, people, topics, action_items, created_at
   `;
   const row = rows[0];
@@ -211,4 +215,42 @@ export async function deleteThought(thoughtId: string): Promise<string> {
   return rows.length
     ? `Deleted thought ${thoughtId}.`
     : `No thought found with ID ${thoughtId}.`;
+}
+
+export async function listTasks(
+  status: string = "untriaged",
+  limit = 20
+): Promise<string> {
+  const rows = (await sql()`
+    SELECT id, raw_text, thought_type, status, people, topics, action_items, created_at
+    FROM thoughts
+    WHERE thought_type = 'action_item' AND status = ${status}
+    ORDER BY created_at ASC
+    LIMIT ${limit}
+  `) as ThoughtRow[];
+
+  if (!rows.length) return `No ${status} tasks found.`;
+
+  const results = rows.map(formatThought);
+  return `${rows.length} ${status} task(s):\n\n${results.join("\n\n")}`;
+}
+
+export async function completeTask(thoughtId: string): Promise<string> {
+  const rows = await sql()`
+    UPDATE thoughts SET status = 'completed'
+    WHERE id = ${thoughtId} AND thought_type = 'action_item'
+    RETURNING id, raw_text
+  `;
+  if (!rows.length) return `No action_item found with ID ${thoughtId}.`;
+  return `Completed task: ${rows[0].raw_text}\nID: ${rows[0].id}`;
+}
+
+export async function skipTask(thoughtId: string): Promise<string> {
+  const rows = await sql()`
+    UPDATE thoughts SET status = 'active'
+    WHERE id = ${thoughtId} AND thought_type = 'action_item'
+    RETURNING id, raw_text
+  `;
+  if (!rows.length) return `No action_item found with ID ${thoughtId}.`;
+  return `Skipped (moved to active): ${rows[0].raw_text}\nID: ${rows[0].id}`;
 }

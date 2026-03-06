@@ -107,10 +107,15 @@ def extract_metadata(text: str) -> dict:
     return result
 
 
+VALID_STATUSES = ["untriaged", "active", "completed", "skipped"]
+
+
 def format_thought(row: dict) -> str:
     """Format a thought row for display."""
+    status = row.get("status", "untriaged")
+    status_label = f" [{status}]" if status and status != "untriaged" else ""
     parts = [
-        f"**{row['thought_type'].replace('_', ' ').title()}** — {row['created_at'].strftime('%Y-%m-%d %H:%M')}",
+        f"**{row['thought_type'].replace('_', ' ').title()}**{status_label} — {row['created_at'].strftime('%Y-%m-%d %H:%M')}",
         f"  {row['raw_text']}",
     ]
     if row.get("people"):
@@ -140,13 +145,15 @@ def capture(text: str, source: str = "mcp") -> str:
     embedding = generate_embedding(text)
     metadata = extract_metadata(text)
 
+    status = "untriaged" if metadata["thought_type"] == "action_item" else "active"
+
     conn = get_db()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
-                INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source)
-                VALUES (%s, %s::vector, %s, %s, %s, %s, %s)
+                INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source, status)
+                VALUES (%s, %s::vector, %s, %s, %s, %s, %s, %s)
                 RETURNING id, thought_type, people, topics, action_items, created_at
                 """,
                 (
@@ -157,6 +164,7 @@ def capture(text: str, source: str = "mcp") -> str:
                     metadata["topics"],
                     metadata["action_items"],
                     source,
+                    status,
                 ),
             )
             row = cur.fetchone()
@@ -446,6 +454,95 @@ def delete_thought(thought_id: str) -> str:
         return f"Deleted thought {thought_id}."
     else:
         return f"No thought found with ID {thought_id}."
+
+
+@mcp.tool()
+def list_tasks(status: str = "untriaged", limit: int = 20) -> str:
+    """List tasks (action_item thoughts) filtered by status. Use this to surface untriaged tasks at session start or review active/completed tasks.
+
+    Args:
+        status: Filter by status — one of: untriaged, active, completed, skipped (default: untriaged).
+        limit: Maximum number of results (default: 20).
+    """
+    if status not in VALID_STATUSES:
+        return f"Invalid status '{status}'. Must be one of: {', '.join(VALID_STATUSES)}"
+
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, raw_text, thought_type, status, people, topics, action_items, created_at
+                FROM thoughts
+                WHERE thought_type = 'action_item' AND status = %s
+                ORDER BY created_at ASC
+                LIMIT %s
+                """,
+                (status, limit),
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return f"No {status} tasks found."
+
+    results = [format_thought(row) for row in rows]
+    return f"{len(rows)} {status} task(s):\n\n" + "\n\n".join(results)
+
+
+@mcp.tool()
+def complete_task(thought_id: str) -> str:
+    """Mark a task as completed. Non-destructive — the thought is kept but marked done.
+
+    Args:
+        thought_id: The UUID of the action_item to complete.
+    """
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE thoughts SET status = 'completed'
+                WHERE id = %s AND thought_type = 'action_item'
+                RETURNING id, raw_text
+                """,
+                (thought_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return f"No action_item found with ID {thought_id}."
+    return f"Completed task: {row['raw_text']}\nID: {row['id']}"
+
+
+@mcp.tool()
+def skip_task(thought_id: str) -> str:
+    """Skip a task for now — moves it from untriaged to active so it won't appear in triage but stays on your radar.
+
+    Args:
+        thought_id: The UUID of the action_item to skip.
+    """
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE thoughts SET status = 'active'
+                WHERE id = %s AND thought_type = 'action_item'
+                RETURNING id, raw_text
+                """,
+                (thought_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return f"No action_item found with ID {thought_id}."
+    return f"Skipped (moved to active): {row['raw_text']}\nID: {row['id']}"
 
 
 # --- Entry Point ---

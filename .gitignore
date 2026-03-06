@@ -22,6 +22,7 @@ venv/
 node_modules/
 .next/
 .vercel/
+*.tsbuildinfo
 
 # Claude Code
 .claude/
