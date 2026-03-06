@@ -4,6 +4,46 @@ import { join } from "path";
 import "dotenv/config";
 
 /**
+ * Split a SQL file into individual statements, respecting $$ blocks
+ * (PL/pgSQL functions, DO blocks) that contain semicolons.
+ */
+function splitStatements(content: string): string[] {
+  const statements: string[] = [];
+  let current = "";
+  let inDollarBlock = false;
+
+  for (let i = 0; i < content.length; i++) {
+    // Check for $$ delimiter
+    if (content[i] === "$" && content[i + 1] === "$") {
+      current += "$$";
+      i++; // skip second $
+      inDollarBlock = !inDollarBlock;
+      continue;
+    }
+
+    // Statement boundary (semicolon outside $$ block)
+    if (content[i] === ";" && !inDollarBlock) {
+      const trimmed = current.trim();
+      if (trimmed) {
+        statements.push(trimmed);
+      }
+      current = "";
+      continue;
+    }
+
+    current += content[i];
+  }
+
+  // Catch any trailing statement without a semicolon
+  const trimmed = current.trim();
+  if (trimmed) {
+    statements.push(trimmed);
+  }
+
+  return statements;
+}
+
+/**
  * Simple SQL migration runner.
  *
  * Reads numbered .sql files from src/migrations/ and applies them in order.
@@ -43,9 +83,13 @@ const runMigrate = async () => {
     }
 
     const content = readFileSync(join(migrationsDir, file), "utf-8");
-    console.log(`  apply: ${file}`);
+    const statements = splitStatements(content);
+    console.log(`  apply: ${file} (${statements.length} statement(s))`);
 
-    await sql(content);
+    for (const stmt of statements) {
+      await sql(stmt);
+    }
+
     await sql`INSERT INTO schema_migrations (filename) VALUES (${file})`;
     ran++;
   }
