@@ -25,3 +25,16 @@ Thoughts classified as `action_item` have a `status` lifecycle:
 - **skipped** — explicitly deferred
 
 A SessionStart hook automatically checks for untriaged tasks and prompts the user to triage them (work on it, skip, or mark complete).
+
+## Database Migrations
+
+Migrations are sequential `.sql` files in `src/migrations/`, numbered `001_`, `002_`, etc. A `schema_migrations` table in Postgres tracks which files have been applied.
+
+**Workflow for schema changes:**
+1. Update the Drizzle schema in `lib/db/schema/`
+2. Create a new numbered `.sql` file in `src/migrations/` with the DDL
+3. If existing data needs updating, add a follow-up backfill migration (e.g. `003_backfill_status.sql`)
+4. Migrations run automatically on every Vercel deploy (`npm run db:migrate` in the build step)
+5. Locally: `npm run db:migrate` to apply pending migrations
+
+Migrations are idempotent — the runner skips already-applied files. Never edit a migration that has been deployed; always create a new one.
