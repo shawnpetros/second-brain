@@ -30,11 +30,11 @@ Just vibes. Semantic vibes. 🫠
                                    |
                                    v
                     ╔══════════════════════════════╗
-                    ║  🔮 semantic search          ║
+                    ║        semantic search       ║
                     ║  pgvector cosine similarity  ║
                     ╚══════════════════════════════╝
-                                    |
-                                    v
+                                   |
+                                   v
  brain: "Found 3 thoughts: Meeting with Alex on Feb 12..."
 ```
 
