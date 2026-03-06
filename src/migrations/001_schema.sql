@@ -5,7 +5,7 @@
 create extension if not exists vector;
 
 -- Primary thoughts table
-create table thoughts (
+create table if not exists thoughts (
   id            uuid primary key default gen_random_uuid(),
   raw_text      text not null,
   embedding     vector(1536) not null,
@@ -23,15 +23,15 @@ create table thoughts (
 );
 
 -- HNSW index for fast cosine similarity search on embeddings
-create index thoughts_embedding_idx
+create index if not exists thoughts_embedding_idx
   on thoughts using hnsw (embedding vector_cosine_ops)
   with (m = 16, ef_construction = 64);
 
 -- Filtered query indexes
-create index thoughts_type_idx on thoughts (thought_type);
-create index thoughts_created_idx on thoughts (created_at desc);
-create index thoughts_people_idx on thoughts using gin (people);
-create index thoughts_topics_idx on thoughts using gin (topics);
+create index if not exists thoughts_type_idx on thoughts (thought_type);
+create index if not exists thoughts_created_idx on thoughts (created_at desc);
+create index if not exists thoughts_people_idx on thoughts using gin (people);
+create index if not exists thoughts_topics_idx on thoughts using gin (topics);
 
 -- Auto-update updated_at on row modification
 create or replace function update_updated_at()
@@ -42,6 +42,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists thoughts_updated_at on thoughts;
 create trigger thoughts_updated_at
   before update on thoughts
   for each row execute function update_updated_at();
