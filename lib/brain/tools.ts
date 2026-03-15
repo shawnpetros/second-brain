@@ -254,3 +254,13 @@ export async function skipTask(thoughtId: string): Promise<string> {
   if (!rows.length) return `No action_item found with ID ${thoughtId}.`;
   return `Skipped (moved to active): ${rows[0].raw_text}\nID: ${rows[0].id}`;
 }
+
+export async function untriageTask(thoughtId: string): Promise<string> {
+  const rows = await sql()`
+    UPDATE thoughts SET status = 'untriaged'
+    WHERE id = ${thoughtId} AND thought_type = 'action_item'
+    RETURNING id, raw_text
+  `;
+  if (!rows.length) return `No action_item found with ID ${thoughtId}.`;
+  return `Moved back to untriaged: ${rows[0].raw_text}\nID: ${rows[0].id}`;
+}

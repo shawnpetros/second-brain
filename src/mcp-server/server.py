@@ -545,6 +545,33 @@ def skip_task(thought_id: str) -> str:
     return f"Skipped (moved to active): {row['raw_text']}\nID: {row['id']}"
 
 
+@mcp.tool()
+def untriage_task(thought_id: str) -> str:
+    """Move a task back to untriaged status — useful when a task needs re-evaluation or was triaged prematurely.
+
+    Args:
+        thought_id: The UUID of the action_item to untriage.
+    """
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE thoughts SET status = 'untriaged'
+                WHERE id = %s AND thought_type = 'action_item'
+                RETURNING id, raw_text
+                """,
+                (thought_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return f"No action_item found with ID {thought_id}."
+    return f"Moved back to untriaged: {row['raw_text']}\nID: {row['id']}"
+
+
 # --- Entry Point ---
 
 if __name__ == "__main__":

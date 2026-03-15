@@ -5,7 +5,7 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 const RESOURCE_METADATA_PATH = "/.well-known/oauth-protected-resource/mcp";
 
 /**
- * Verify the MCP request's bearer token via Clerk OAuth.
+ * Verify the MCP request's bearer token via Clerk OAuth or static API key.
  * Returns AuthInfo on success, or a 401 Response on failure.
  */
 export async function verifyMcpAuth(
@@ -18,6 +18,17 @@ export async function verifyMcpAuth(
     return unauthorizedResponse(req);
   }
 
+  // Check static API key first (for clients that don't support OAuth 2.1)
+  const apiKey = process.env.BRAIN_API_KEY;
+  if (apiKey && token === apiKey) {
+    return {
+      token,
+      clientId: "static-api-key",
+      scopes: ["profile", "email"],
+    };
+  }
+
+  // Fall back to Clerk OAuth verification
   try {
     const clerkAuth = await auth({ acceptsToken: "oauth_token" });
     const result = await verifyClerkToken(clerkAuth, token);

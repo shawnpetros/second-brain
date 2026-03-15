@@ -15,6 +15,7 @@ The built-in memory system should only be used for project-specific coding conte
 - `list_tasks` — list action_item thoughts filtered by status (untriaged, active, completed, skipped)
 - `complete_task` — mark a task as completed (non-destructive, keeps the record)
 - `skip_task` — move a task from untriaged to active (defers it for later)
+- `untriage_task` — move a task back to untriaged status
 
 ## Task Management
 

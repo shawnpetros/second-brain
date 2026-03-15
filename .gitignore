@@ -31,12 +31,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Non-project files in root (research PDFs, etc.)
-*.pdf
-EBOOK_RUBRIC_AND_OUTLINE.md
-LANDING_PAGE_SPEC.md
-MARKETING_RESEARCH_GUIDE.md
-
 # IDE
 .idea/
 .vscode/

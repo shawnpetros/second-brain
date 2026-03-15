@@ -13,6 +13,7 @@ import {
   listTasks,
   completeTask,
   skipTask,
+  untriageTask,
 } from "@/lib/brain/tools";
 
 function createServer(): McpServer {
@@ -137,6 +138,17 @@ function createServer(): McpServer {
     },
     async ({ thought_id }) => ({
       content: [{ type: "text" as const, text: await skipTask(thought_id) }],
+    })
+  );
+
+  server.tool(
+    "untriage_task",
+    "Move a task back to untriaged status — useful when a task needs re-evaluation or was triaged prematurely.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the action_item to untriage."),
+    },
+    async ({ thought_id }) => ({
+      content: [{ type: "text" as const, text: await untriageTask(thought_id) }],
     })
   );
 

@@ -1,0 +1,142 @@
+{
+  "project": "second-brain",
+  "updated": "2026-03-15",
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "untriage_task tool",
+      "description": "Add MCP tool to move tasks back from active to untriaged status",
+      "status": "completed",
+      "priority": "P1",
+      "source": "user request",
+      "created": "2026-03-14"
+    },
+    {
+      "id": "feat-002",
+      "name": "Pass option in triage flow",
+      "description": "Allow leaving tasks untriaged during session start triage (no-op pass)",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "user request",
+      "created": "2026-03-14"
+    },
+    {
+      "id": "feat-003",
+      "name": "SessionStart hook surfaces active tasks",
+      "description": "Update SessionStart agent hook to show both untriaged and active tasks",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "user request",
+      "created": "2026-03-14"
+    },
+    {
+      "id": "feat-100",
+      "name": "Visual dashboard",
+      "description": "Web UI to browse, search, and manage thoughts — the 'human door' alongside the MCP 'agent door'",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "video analysis (Nate B. Jones)",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-101",
+      "name": "Conversation context capture",
+      "description": "Automatically capture full conversation context (not just summaries) during agent sessions",
+      "status": "planned",
+      "priority": "P2",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-102",
+      "name": "Multi-agent shared memory",
+      "description": "Allow multiple AI agents (Claude, ChatGPT, Cursor) to read/write the same brain simultaneously",
+      "status": "completed",
+      "priority": "P2",
+      "source": "video analysis",
+      "created": "2026-03-15",
+      "notes": "Already supported via MCP — any client with OAuth or API key can access"
+    },
+    {
+      "id": "feat-103",
+      "name": "Cross-category search",
+      "description": "Unified search across all thought types with filtering, not siloed by category",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-104",
+      "name": "Time-bridging alerts",
+      "description": "Proactive alerts for aging tasks, stale relationships, and items needing attention",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-105",
+      "name": "Relationship graph",
+      "description": "Visual graph of connections between people, topics, and thoughts",
+      "status": "planned",
+      "priority": "P3",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-106",
+      "name": "Periodic reflection prompts",
+      "description": "Scheduled prompts that encourage regular brain review and reflection",
+      "status": "planned",
+      "priority": "P3",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-107",
+      "name": "Source attribution & linking",
+      "description": "Link thoughts back to source conversations, URLs, or documents",
+      "status": "planned",
+      "priority": "P2",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-108",
+      "name": "Thought versioning",
+      "description": "Track changes to thoughts over time, see evolution of ideas",
+      "status": "planned",
+      "priority": "P3",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-109",
+      "name": "Direct edit from UI",
+      "description": "Edit thought text, change status, and delete directly from the dashboard",
+      "status": "in_progress",
+      "priority": "P1",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-110",
+      "name": "Export & backup",
+      "description": "Export brain data as JSON/markdown for backup or migration",
+      "status": "planned",
+      "priority": "P2",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    },
+    {
+      "id": "feat-111",
+      "name": "Privacy & access controls",
+      "description": "Per-thought or per-category visibility controls for multi-user scenarios",
+      "status": "planned",
+      "priority": "P3",
+      "source": "video analysis",
+      "created": "2026-03-15"
+    }
+  ]
+}
