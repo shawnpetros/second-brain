@@ -24,13 +24,17 @@ function createServer(): McpServer {
 
   server.tool(
     "capture",
-    "Capture a new thought into your brain. Generates an embedding and extracts metadata automatically.",
+    "Capture a new thought into your brain. Generates an embedding and extracts metadata automatically. When capturing session handoffs, split distinct categories (milestones, insights, action items) into separate captures with the appropriate thought_type hint.",
     {
       text: z.string().describe("The thought, note, decision, or insight to capture."),
       source: z.string().default("mcp").describe("Where this thought came from."),
+      thought_type: z.enum([
+        "decision", "insight", "meeting", "person_note",
+        "idea", "action_item", "reflection", "reference", "milestone",
+      ]).optional().describe("Optional type hint. If provided, overrides auto-classification. Use 'milestone' for accomplishments/shipped work, 'action_item' for remaining tasks."),
     },
-    async ({ text, source }) => ({
-      content: [{ type: "text" as const, text: await capture(text, source) }],
+    async ({ text, source, thought_type }) => ({
+      content: [{ type: "text" as const, text: await capture(text, source, thought_type) }],
     })
   );
 

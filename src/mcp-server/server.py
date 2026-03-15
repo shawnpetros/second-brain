@@ -134,19 +134,22 @@ def format_thought(row: dict) -> str:
 
 
 @mcp.tool()
-def capture(text: str, source: str = "mcp") -> str:
+def capture(text: str, source: str = "mcp", thought_type: str | None = None) -> str:
     """Capture a new thought into your brain. Generates an embedding and extracts metadata automatically.
+
+    When capturing session handoffs, split distinct categories (milestones, insights, action items)
+    into separate captures with the appropriate thought_type hint.
 
     Args:
         text: The thought, note, decision, or insight to capture.
         source: Where this thought came from (default: "mcp"). Options: mcp, cli, slack, migration.
+        thought_type: Optional type hint. Overrides auto-classification if provided. Use 'milestone' for accomplishments/shipped work, 'action_item' for remaining tasks.
     """
-    # Generate embedding and extract metadata in sequence
-    # (parallel would require asyncio; these are fast enough sequentially)
     embedding = generate_embedding(text)
     metadata = extract_metadata(text)
 
-    status = "untriaged" if metadata["thought_type"] == "action_item" else "active"
+    final_type = thought_type if thought_type and thought_type in VALID_TYPES else metadata["thought_type"]
+    status = "untriaged" if final_type == "action_item" else "active"
 
     conn = get_db()
     try:
@@ -160,7 +163,7 @@ def capture(text: str, source: str = "mcp") -> str:
                 (
                     text,
                     str(embedding),
-                    metadata["thought_type"],
+                    final_type,
                     metadata["people"],
                     metadata["topics"],
                     metadata["action_items"],

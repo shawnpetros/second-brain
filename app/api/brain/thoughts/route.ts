@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "text is required" }, { status: 400 });
   }
 
-  const thought = await insertThought(body.text, body.source ?? "dashboard");
+  const thought = await insertThought(body.text, body.source ?? "dashboard", body.thought_type);
   return NextResponse.json(thought, { status: 201 });
 }

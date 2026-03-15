@@ -99,7 +99,7 @@ describe("POST /api/brain/thoughts", () => {
 
     expect(res.status).toBe(201);
     expect(data.raw_text).toBe("Test thought");
-    expect(insertThought).toHaveBeenCalledWith("Test thought", "dashboard");
+    expect(insertThought).toHaveBeenCalledWith("Test thought", "dashboard", undefined);
   });
 
   it("returns 400 when text is missing", async () => {
@@ -125,7 +125,7 @@ describe("POST /api/brain/thoughts", () => {
     });
     await POST(req);
 
-    expect(insertThought).toHaveBeenCalledWith("Test", "mobile");
+    expect(insertThought).toHaveBeenCalledWith("Test", "mobile", undefined);
   });
 });
 

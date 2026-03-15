@@ -213,18 +213,20 @@ export async function queryStats(days = 30): Promise<BrainStats> {
 
 export async function insertThought(
   text: string,
-  source = "dashboard"
+  source = "dashboard",
+  thoughtTypeHint?: string
 ): Promise<ThoughtRecord> {
   const [embedding, metadata] = await Promise.all([
     generateEmbedding(text),
     extractMetadata(text),
   ]);
 
-  const status = metadata.thought_type === "action_item" ? "untriaged" : "active";
+  const thoughtType = thoughtTypeHint || metadata.thought_type;
+  const status = thoughtType === "action_item" ? "untriaged" : "active";
 
   const rows = await sql()`
     INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source, status)
-    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${metadata.thought_type}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source}, ${status})
+    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${thoughtType}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source}, ${status})
     RETURNING id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
   `;
   return rows[0] as ThoughtRecord;

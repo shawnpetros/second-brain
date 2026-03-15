@@ -75,7 +75,7 @@ describe("tools.ts", () => {
       expect(result).toContain("Topics: testing, quality");
       expect(result).toContain("People: Alice");
       expect(result).toContain("ID: abc-123");
-      expect(insertThought).toHaveBeenCalledWith("Test thought about testing", "mcp");
+      expect(insertThought).toHaveBeenCalledWith("Test thought about testing", "mcp", undefined);
     });
 
     it("passes custom source", async () => {
@@ -83,7 +83,7 @@ describe("tools.ts", () => {
 
       await capture("Test", "dashboard");
 
-      expect(insertThought).toHaveBeenCalledWith("Test", "dashboard");
+      expect(insertThought).toHaveBeenCalledWith("Test", "dashboard", undefined);
     });
 
     it("shows action items when present", async () => {

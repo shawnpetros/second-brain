@@ -28,8 +28,8 @@ function formatThought(row: ThoughtRecord): string {
   return parts.join("\n");
 }
 
-export async function capture(text: string, source = "mcp"): Promise<string> {
-  const row = await insertThought(text, source);
+export async function capture(text: string, source = "mcp", thoughtType?: string): Promise<string> {
+  const row = await insertThought(text, source, thoughtType);
 
   const parts = [
     `Captured as **${row.thought_type.replace(/_/g, " ")}**.`,
