@@ -33,7 +33,8 @@
       "id": "feat-100",
       "name": "Visual dashboard",
       "description": "Web UI to browse, search, and manage thoughts — the 'human door' alongside the MCP 'agent door'",
-      "status": "in_progress",
+      "status": "completed",
+      "completed": "2026-03-15",
       "priority": "P1",
       "source": "video analysis (Nate B. Jones)",
       "created": "2026-03-15"
@@ -61,7 +62,8 @@
       "id": "feat-103",
       "name": "Cross-category search",
       "description": "Unified search across all thought types with filtering, not siloed by category",
-      "status": "in_progress",
+      "status": "completed",
+      "completed": "2026-03-15",
       "priority": "P1",
       "source": "video analysis",
       "created": "2026-03-15"
@@ -70,7 +72,8 @@
       "id": "feat-104",
       "name": "Time-bridging alerts",
       "description": "Proactive alerts for aging tasks, stale relationships, and items needing attention",
-      "status": "in_progress",
+      "status": "completed",
+      "completed": "2026-03-15",
       "priority": "P1",
       "source": "video analysis",
       "created": "2026-03-15"
@@ -115,7 +118,8 @@
       "id": "feat-109",
       "name": "Direct edit from UI",
       "description": "Edit thought text, change status, and delete directly from the dashboard",
-      "status": "in_progress",
+      "status": "completed",
+      "completed": "2026-03-15",
       "priority": "P1",
       "source": "video analysis",
       "created": "2026-03-15"
