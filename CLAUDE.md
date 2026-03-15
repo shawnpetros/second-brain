@@ -61,6 +61,9 @@ Tests are in `tests/` using vitest. Run with `pnpm test`.
 - Shared data layer (queries.ts), 5 REST API endpoints, 4 dashboard pages, 8 components
 - 88 tests, PWA icons, mobile nav, Cmd+K search, inline editing
 - Clerk email allowlist configured in dashboard (manual step done)
+- Added `milestone` thought type — for session summaries, wins, and shipped features (not tasks)
+- Migration 004 applied, extraction prompt updated, 6 existing thoughts reclassified
+- `/` now redirects authenticated users to `/dashboard`
 - Pushed to main, deploying to second-brain.shawnpetros.com
 
 **Still in progress (from before this session):**
