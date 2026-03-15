@@ -12,7 +12,7 @@ import type { ThoughtRecord } from "@/lib/brain/queries";
 
 const THOUGHT_TYPES = [
   "decision", "insight", "meeting", "person_note",
-  "idea", "action_item", "reflection", "reference",
+  "idea", "action_item", "reflection", "reference", "milestone",
 ];
 
 export default function ThoughtsPage() {

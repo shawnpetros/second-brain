@@ -23,6 +23,7 @@ const typeColors: Record<string, string> = {
   action_item: "bg-red-500/15 text-red-400 border-red-500/30",
   reflection: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   reference: "bg-gray-500/15 text-gray-400 border-gray-500/30",
+  milestone: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
 interface ThoughtCardProps {
