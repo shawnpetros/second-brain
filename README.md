@@ -38,7 +38,7 @@ Just vibes. Semantic vibes. 🫠
  brain: "Found 3 thoughts: Meeting with Alex on Feb 12..."
 ```
 
-**7 tools. One brain. Zero organizational skills required.**
+**11 MCP tools + a visual dashboard. Zero organizational skills required.**
 
 | Tool | What It Does | The Vibe |
 |------|-------------|----------|
@@ -49,6 +49,10 @@ Just vibes. Semantic vibes. 🫠
 | `list_recent` | Browse what's been on your mind | 📅 "what's been on my mind this week?" |
 | `stats` | View your brain's patterns | 📊 "how's my brain doing?" |
 | `delete_thought` | Remove a thought forever | 🗑️ "forget I said that" |
+| `list_tasks` | View action items by status | ✅ "what's on my plate?" |
+| `complete_task` | Mark a task as done | 🎉 "done!" |
+| `skip_task` | Defer a task for later | ⏭️ "not now" |
+| `untriage_task` | Move a task back to untriaged | ↩️ "actually, re-evaluate this" |
 
 Every thought gets automatically classified (decision, insight, idea, reflection...), people are extracted, topics are tagged, and action items are surfaced. All of this happens invisibly — you just think, it just files.
 
@@ -224,6 +228,74 @@ This is *your* brain. Open source. On *your* infrastructure. Queryable by *any* 
 It's not about replacing your biological brain. It's about giving it a search engine that actually understands what you meant.
 
 **Now stop reading READMEs and go capture some thoughts.** ✌️
+
+---
+
+## 🖥️ Visual Dashboard
+
+Your brain has a human door too. Visit `/dashboard` to browse, search, edit, and manage your thoughts visually.
+
+**Features:**
+- **Overview** — Stats cards, time-bridging alerts (aging tasks, stale items, fading relationships), and a recent thoughts feed
+- **Thoughts Feed** — Filter by type, topic, or person. Cross-category search across all thought types
+- **Task Management** — Untriaged / Active / Completed / Skipped tabs with quick-action buttons
+- **Semantic Search** — Search by meaning with similarity scores. `Cmd+K` shortcut from anywhere
+- **Inline Editing** — Edit thought text (re-extracts metadata), change task status, delete — all from the UI
+- **Quick Capture** — "+" button / dialog to capture thoughts from the browser (with `Cmd+Enter` shortcut)
+- **Mobile-friendly** — Bottom tab nav, touch targets, Add to Home Screen via `manifest.json`
+
+The dashboard and MCP server share the same database via a shared data layer (`lib/brain/queries.ts`). Capture a thought from Claude → see it in the dashboard. Edit it in the dashboard → MCP `semantic_search` reflects the change immediately.
+
+**Auth:** The dashboard is protected by Clerk. Only emails on the allowlist can access it (see Clerk Setup below). Unauthenticated users at `/` see a sign-in button; authenticated users are redirected to `/dashboard`.
+
+---
+
+## 🔐 Clerk Setup
+
+Clerk handles auth for both the MCP OAuth flow and the visual dashboard.
+
+### Required Environment Variables
+
+| Variable | Where |
+|----------|-------|
+| `CLERK_SECRET_KEY` | Clerk Dashboard → API Keys (`sk_test_...`) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API Keys (`pk_test_...`) |
+| `BRAIN_API_KEY` | Optional. Static API key fallback for MCP clients that don't support OAuth (e.g., some Cursor configurations) |
+
+### Email Allowlist (Dashboard Access)
+
+The dashboard has defense-in-depth access control:
+
+1. **Clerk platform-level allowlist** — Clerk Dashboard → Restrictions → Allowlist → Enable → add authorized emails
+2. **Code-level allowlist** — `lib/auth/dashboard-auth.ts` has an `ALLOWED_EMAILS` array. API routes check this before touching data.
+
+To add or remove authorized users, update **both**:
+- Clerk Dashboard → Restrictions → Allowlist
+- `ALLOWED_EMAILS` in `lib/auth/dashboard-auth.ts`
+
+### MCP OAuth Flow
+
+For MCP clients (Claude Code, Cursor, etc.):
+1. Enable **Dynamic Client Registration** in Clerk Dashboard → Configure → OAuth Applications
+2. MCP clients auto-discover OAuth metadata via `/.well-known/oauth-authorization-server`
+3. Users authenticate through the browser — no API keys needed
+
+---
+
+## 🧪 Testing
+
+```bash
+pnpm test          # Run all tests
+pnpm test:watch    # Watch mode
+pnpm test:coverage # With coverage report
+```
+
+The test suite covers:
+- **Auth** — allowlist enforcement, case-insensitive matching, 401/403 responses
+- **Data layer** — queries, inserts, updates, deletes, alerts, stats aggregation
+- **MCP tools** — all 11 tools with markdown formatting validation
+- **API routes** — GET/POST/PATCH/DELETE with auth, validation, and 404 handling
+- **Components** — ThoughtCard, StatsCards, AlertCard, TaskActions rendering and interactions
 
 ---
 
