@@ -16,6 +16,10 @@ The built-in memory system should only be used for project-specific coding conte
 - `complete_task` — mark a task as completed (non-destructive, keeps the record)
 - `skip_task` — move a task from untriaged to active (defers it for later)
 - `untriage_task` — move a task back to untriaged status
+- `add_service` — add a service/tool to business inventory (name, category, billing_model, projects, cost, notes)
+- `list_services` — list services with optional filters (category, project, status); shows cost totals
+- `update_service` — update any field on a service by ID
+- `remove_service` — delete a service by ID
 
 ## Task Management
 
@@ -53,24 +57,10 @@ Dashboard components are in `components/dashboard/`. UI primitives are shadcn/ui
 
 Tests are in `tests/` using vitest. Run with `pnpm test`.
 
-## Session Handoff
+## Brain Sync
 
-**Date:** 2026-03-15
-**What was done:**
-- Implemented full P1 dashboard plan (feat-100, 103, 104, 109) — all 10 phases
-- Shared data layer (queries.ts), 5 REST API endpoints, 4 dashboard pages, 8 components
-- 88 tests, PWA icons, mobile nav, Cmd+K search, inline editing
-- Clerk email allowlist configured in dashboard (manual step done)
-- Added `milestone` thought type — for session summaries, wins, and shipped features (not tasks)
-- Migration 004 applied, extraction prompt updated, 6 existing thoughts reclassified
-- `/` now redirects authenticated users to `/dashboard`
-- Pushed to main, deploying to second-brain.shawnpetros.com
+Search terms: `second-brain`, `open-brain`, `dashboard`, `MCP server`, `thought capture`
 
-**Still in progress (from before this session):**
-- feat-002: Pass option in triage flow
-- feat-003: SessionStart hook surfaces active tasks
+## Feature Tracker
 
-**Next steps:**
-- Verify dashboard works in production after Vercel deploy
-- Visually test on mobile viewport + Add to Home Screen
-- Capture a thought from MCP, confirm it shows in dashboard (and vice versa)
+See `features.json` — 14 features tracked. P1 features complete (dashboard, search, alerts, inline edit, input coercion). P2 planned: project scoping (feat-112), session context capture (feat-113). See `SESSION-CONTEXT.md` for current state.

@@ -1,6 +1,6 @@
 {
   "project": "second-brain",
-  "updated": "2026-03-15",
+  "updated": "2026-03-18",
   "features": [
     {
       "id": "feat-001",
@@ -141,6 +141,44 @@
       "priority": "P3",
       "source": "video analysis",
       "created": "2026-03-15"
+    },
+    {
+      "id": "feat-112",
+      "name": "Project scoping for thoughts",
+      "description": "Add optional 'project' field to thoughts. Enable project-filtered views in dashboard, project-scoped triage at session start, and a 'project issues' view. Supports the emerging pattern of second-brain as a cross-project issue tracker.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "brain insight (37512f6a, c35b2565)",
+      "created": "2026-03-16"
+    },
+    {
+      "id": "feat-113",
+      "name": "Session context capture (/compact)",
+      "description": "A dedicated thought_type or structured capture for session handoffs — what was done, decisions made, open threads. Enables resumable conversations via semantic search on session open. Complements the manual SESSION-CONTEXT.md protocol with brain-native persistence.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "brain insight (eb653311)",
+      "created": "2026-03-16"
+    },
+    {
+      "id": "feat-114",
+      "name": "MCP input coercion hardening",
+      "description": "Ensure all MCP tool schemas use z.coerce for type-flexible inputs (numbers, booleans). Defensive pattern against MCP clients that serialize all args as strings.",
+      "status": "completed",
+      "completed": "2026-03-16",
+      "priority": "P1",
+      "source": "bug report",
+      "created": "2026-03-16"
+    },
+    {
+      "id": "feat-115",
+      "name": "Service inventory table + MCP tools",
+      "description": "Structured services table in Postgres for tracking business tools, integrations, and spend across all projects. 4 MCP tools: add_service, list_services, update_service, remove_service. Filterable by project, category, status with cost totaling.",
+      "status": "completed",
+      "completed": "2026-03-18",
+      "priority": "P1",
+      "source": "business audit session",
+      "created": "2026-03-18"
     }
   ]
 }

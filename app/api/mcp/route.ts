@@ -43,7 +43,7 @@ function createServer(): McpServer {
     "Search your brain by meaning. Finds thoughts semantically similar to your query.",
     {
       query: z.string().describe("What you're looking for, described naturally."),
-      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+      limit: z.coerce.number().int().min(1).max(50).default(10).describe("Maximum results."),
     },
     async ({ query, limit }) => ({
       content: [{ type: "text" as const, text: await semanticSearch(query, limit) }],
@@ -55,7 +55,7 @@ function createServer(): McpServer {
     "Find all thoughts that mention a specific person.",
     {
       name: z.string().describe("Person's name (case-insensitive partial match)."),
-      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+      limit: z.coerce.number().int().min(1).max(50).default(10).describe("Maximum results."),
     },
     async ({ name, limit }) => ({
       content: [{ type: "text" as const, text: await searchByPerson(name, limit) }],
@@ -67,7 +67,7 @@ function createServer(): McpServer {
     "Find all thoughts tagged with a specific topic.",
     {
       topic: z.string().describe("Topic to search for (case-insensitive partial match)."),
-      limit: z.number().int().min(1).max(50).default(10).describe("Maximum results."),
+      limit: z.coerce.number().int().min(1).max(50).default(10).describe("Maximum results."),
     },
     async ({ topic, limit }) => ({
       content: [{ type: "text" as const, text: await searchByTopic(topic, limit) }],
@@ -78,8 +78,8 @@ function createServer(): McpServer {
     "list_recent",
     "List recently captured thoughts.",
     {
-      days: z.number().int().min(1).max(365).default(7).describe("How many days back."),
-      limit: z.number().int().min(1).max(100).default(20).describe("Maximum results."),
+      days: z.coerce.number().int().min(1).max(365).default(7).describe("How many days back."),
+      limit: z.coerce.number().int().min(1).max(100).default(20).describe("Maximum results."),
     },
     async ({ days, limit }) => ({
       content: [{ type: "text" as const, text: await listRecent(days, limit) }],
@@ -90,7 +90,7 @@ function createServer(): McpServer {
     "stats",
     "View your brain's statistics: capture frequency, topic distribution, and patterns.",
     {
-      days: z.number().int().min(1).max(365).default(30).describe("Days to analyze."),
+      days: z.coerce.number().int().min(1).max(365).default(30).describe("Days to analyze."),
     },
     async ({ days }) => ({
       content: [{ type: "text" as const, text: await stats(days) }],
@@ -116,7 +116,7 @@ function createServer(): McpServer {
         .enum(["untriaged", "active", "completed", "skipped"])
         .default("untriaged")
         .describe("Filter tasks by status."),
-      limit: z.number().int().min(1).max(100).default(20).describe("Maximum results."),
+      limit: z.coerce.number().int().min(1).max(100).default(20).describe("Maximum results."),
     },
     async ({ status, limit }) => ({
       content: [{ type: "text" as const, text: await listTasks(status, limit) }],

@@ -576,6 +576,258 @@ def untriage_task(thought_id: str) -> str:
     return f"Moved back to untriaged: {row['raw_text']}\nID: {row['id']}"
 
 
+# --- Service Inventory Tools ---
+
+VALID_SERVICE_CATEGORIES = [
+    "hosting", "database", "auth", "ai", "email", "payments",
+    "cms", "automation", "analytics", "storage", "communication", "scheduling", "other",
+]
+
+VALID_BILLING_MODELS = [
+    "free", "plan", "per-token", "per-transaction", "per-email",
+    "per-subscriber", "per-message", "per-compute", "per-storage", "usage", "other",
+]
+
+VALID_SERVICE_STATUSES = ["active", "inactive", "evaluating"]
+
+
+def format_service(row: dict) -> str:
+    """Format a service row for display."""
+    cost = f"${row['monthly_cost']}/mo" if row.get("monthly_cost") is not None else "unknown"
+    parts = [
+        f"**{row['name']}** ({row['category']}) — {row['status']}",
+        f"  Billing: {row['billing_model']} | Cost: {cost}",
+    ]
+    if row.get("projects"):
+        parts.append(f"  Projects: {', '.join(row['projects'])}")
+    if row.get("notes"):
+        parts.append(f"  Notes: {row['notes']}")
+    parts.append(f"  ID: {row['id']}")
+    return "\n".join(parts)
+
+
+@mcp.tool()
+def add_service(
+    name: str,
+    category: str,
+    billing_model: str,
+    projects: list[str] | None = None,
+    monthly_cost: float | None = None,
+    notes: str | None = None,
+    status: str = "active",
+) -> str:
+    """Add a service or tool to your business inventory.
+
+    Args:
+        name: Service name (e.g., "Vercel", "Neon", "Stripe").
+        category: One of: hosting, database, auth, ai, email, payments, cms, automation, analytics, storage, communication, scheduling, other.
+        billing_model: One of: free, plan, per-token, per-transaction, per-email, per-subscriber, per-message, per-compute, per-storage, usage, other.
+        projects: List of project directory names that use this service (e.g., ["intel-app", "second-brain"]).
+        monthly_cost: Estimated monthly cost in USD (optional).
+        notes: Any additional context (optional).
+        status: One of: active, inactive, evaluating (default: active).
+    """
+    if category not in VALID_SERVICE_CATEGORIES:
+        return f"Invalid category '{category}'. Must be one of: {', '.join(VALID_SERVICE_CATEGORIES)}"
+    if billing_model not in VALID_BILLING_MODELS:
+        return f"Invalid billing_model '{billing_model}'. Must be one of: {', '.join(VALID_BILLING_MODELS)}"
+    if status not in VALID_SERVICE_STATUSES:
+        return f"Invalid status '{status}'. Must be one of: {', '.join(VALID_SERVICE_STATUSES)}"
+
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO services (name, category, billing_model, projects, monthly_cost, notes, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    name,
+                    category,
+                    billing_model,
+                    projects or [],
+                    monthly_cost,
+                    notes,
+                    status,
+                ),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    return f"Added service:\n{format_service(row)}"
+
+
+@mcp.tool()
+def list_services(
+    category: str | None = None,
+    project: str | None = None,
+    status: str | None = None,
+) -> str:
+    """List services in your business inventory with optional filters.
+
+    Args:
+        category: Filter by category (e.g., "ai", "database").
+        project: Filter by project name (e.g., "intel-app"). Shows only services used by that project.
+        status: Filter by status — one of: active, inactive, evaluating.
+    """
+    conditions = []
+    params = []
+
+    if category:
+        conditions.append("category = %s")
+        params.append(category)
+    if project:
+        conditions.append("%s = ANY(projects)")
+        params.append(project)
+    if status:
+        if status not in VALID_SERVICE_STATUSES:
+            return f"Invalid status '{status}'. Must be one of: {', '.join(VALID_SERVICE_STATUSES)}"
+        conditions.append("status = %s")
+        params.append(status)
+
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                SELECT * FROM services
+                {where}
+                ORDER BY category, name
+                """,
+                params,
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        filters = []
+        if category:
+            filters.append(f"category={category}")
+        if project:
+            filters.append(f"project={project}")
+        if status:
+            filters.append(f"status={status}")
+        filter_str = f" (filters: {', '.join(filters)})" if filters else ""
+        return f"No services found{filter_str}."
+
+    # Calculate total monthly cost
+    total = sum(float(r["monthly_cost"]) for r in rows if r.get("monthly_cost") is not None)
+    results = [format_service(row) for row in rows]
+    header = f"{len(rows)} service(s)"
+    if total > 0:
+        header += f" — estimated total: ${total:.2f}/mo"
+
+    return f"{header}\n\n" + "\n\n".join(results)
+
+
+@mcp.tool()
+def update_service(
+    service_id: str,
+    name: str | None = None,
+    category: str | None = None,
+    billing_model: str | None = None,
+    projects: list[str] | None = None,
+    monthly_cost: float | None = None,
+    notes: str | None = None,
+    status: str | None = None,
+) -> str:
+    """Update a service in your business inventory. Only provided fields are changed.
+
+    Args:
+        service_id: The UUID of the service to update.
+        name: New service name.
+        category: New category.
+        billing_model: New billing model.
+        projects: Replace the full project list (e.g., ["intel-app", "mealsgpt.com"]).
+        monthly_cost: New monthly cost in USD.
+        notes: New notes (replaces existing).
+        status: New status — one of: active, inactive, evaluating.
+    """
+    updates = []
+    params = []
+
+    if name is not None:
+        updates.append("name = %s")
+        params.append(name)
+    if category is not None:
+        if category not in VALID_SERVICE_CATEGORIES:
+            return f"Invalid category '{category}'. Must be one of: {', '.join(VALID_SERVICE_CATEGORIES)}"
+        updates.append("category = %s")
+        params.append(category)
+    if billing_model is not None:
+        if billing_model not in VALID_BILLING_MODELS:
+            return f"Invalid billing_model '{billing_model}'. Must be one of: {', '.join(VALID_BILLING_MODELS)}"
+        updates.append("billing_model = %s")
+        params.append(billing_model)
+    if projects is not None:
+        updates.append("projects = %s")
+        params.append(projects)
+    if monthly_cost is not None:
+        updates.append("monthly_cost = %s")
+        params.append(monthly_cost)
+    if notes is not None:
+        updates.append("notes = %s")
+        params.append(notes)
+    if status is not None:
+        if status not in VALID_SERVICE_STATUSES:
+            return f"Invalid status '{status}'. Must be one of: {', '.join(VALID_SERVICE_STATUSES)}"
+        updates.append("status = %s")
+        params.append(status)
+
+    if not updates:
+        return "No fields to update. Provide at least one field to change."
+
+    params.append(service_id)
+
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""
+                UPDATE services SET {', '.join(updates)}
+                WHERE id = %s
+                RETURNING *
+                """,
+                params,
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return f"No service found with ID {service_id}."
+    return f"Updated service:\n{format_service(row)}"
+
+
+@mcp.tool()
+def remove_service(service_id: str) -> str:
+    """Remove a service from your business inventory.
+
+    Args:
+        service_id: The UUID of the service to remove.
+    """
+    conn = get_db()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "DELETE FROM services WHERE id = %s RETURNING name",
+                (service_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return f"No service found with ID {service_id}."
+    return f"Removed service: {row['name']}"
+
+
 # --- Entry Point ---
 
 if __name__ == "__main__":
