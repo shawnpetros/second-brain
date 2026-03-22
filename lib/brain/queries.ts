@@ -557,3 +557,105 @@ export async function removeEdge(id: string): Promise<boolean> {
   `;
   return rows.length > 0;
 }
+
+// ── Briefings ──
+
+export interface BriefingRecord {
+  id: string;
+  content: string;
+  raw_data: Record<string, unknown>;
+  model: string;
+  cost_usd: string | null;
+  tokens_used: number | null;
+  thought_count: number;
+  created_at: string;
+}
+
+export async function insertBriefing(data: {
+  content: string;
+  rawData: Record<string, unknown>;
+  model: string;
+  costUsd: number;
+  tokensUsed: number;
+  thoughtCount: number;
+}): Promise<BriefingRecord> {
+  const rows = await sql()`
+    INSERT INTO briefings (content, raw_data, model, cost_usd, tokens_used, thought_count)
+    VALUES (${data.content}, ${JSON.stringify(data.rawData)}, ${data.model}, ${data.costUsd}, ${data.tokensUsed}, ${data.thoughtCount})
+    RETURNING *
+  `;
+  return rows[0] as BriefingRecord;
+}
+
+export async function queryLatestBriefing(): Promise<BriefingRecord | null> {
+  const rows = await sql()`
+    SELECT * FROM briefings ORDER BY created_at DESC LIMIT 1
+  `;
+  return (rows[0] as BriefingRecord) ?? null;
+}
+
+export async function queryBriefings(limit = 10): Promise<BriefingRecord[]> {
+  const rows = await sql()`
+    SELECT * FROM briefings ORDER BY created_at DESC LIMIT ${limit}
+  `;
+  return rows as BriefingRecord[];
+}
+
+export async function gatherBriefingData(): Promise<{
+  recentThoughts: ThoughtRecord[];
+  openTasks: ThoughtRecord[];
+  projectSummaries: { slug: string; name: string; thought_count: number }[];
+  alerts: AlertItem[];
+  newEdges: EdgeRecord[];
+}> {
+  const db = sql();
+
+  const [recent, tasks, projects, alertData, edges] = await Promise.all([
+    // Thoughts from last 24h
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE created_at > now() - interval '24 hours'
+      ORDER BY created_at DESC
+      LIMIT 50
+    `,
+    // Open tasks (untriaged + active)
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE thought_type = 'action_item' AND status IN ('untriaged', 'active')
+      ORDER BY created_at DESC
+      LIMIT 30
+    `,
+    // Project summaries with recent thought counts
+    db`
+      SELECT p.slug, p.name, COUNT(t.id)::int as thought_count
+      FROM projects p
+      LEFT JOIN thoughts t ON t.project_id = p.id AND t.created_at > now() - interval '24 hours'
+      GROUP BY p.id
+      HAVING COUNT(t.id) > 0
+      ORDER BY thought_count DESC
+    `,
+    // Alerts
+    queryAlerts(),
+    // New edges from last 24h
+    db`
+      SELECT e.id, e.from_thought_id, e.to_thought_id, e.edge_type, e.weight, e.created_at,
+        t_from.raw_text as from_text, t_to.raw_text as to_text
+      FROM thought_edges e
+      JOIN thoughts t_from ON t_from.id = e.from_thought_id
+      JOIN thoughts t_to ON t_to.id = e.to_thought_id
+      WHERE e.created_at > now() - interval '24 hours'
+      ORDER BY e.created_at DESC
+      LIMIT 20
+    `,
+  ]);
+
+  return {
+    recentThoughts: recent as ThoughtRecord[],
+    openTasks: tasks as ThoughtRecord[],
+    projectSummaries: projects as { slug: string; name: string; thought_count: number }[],
+    alerts: alertData,
+    newEdges: edges as EdgeRecord[],
+  };
+}

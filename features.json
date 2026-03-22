@@ -214,8 +214,9 @@
     {
       "id": "feat-119",
       "name": "Nervous Center: Morning briefing pipeline",
-      "description": "Phase 5 — QStash-powered morning briefing that walks the graph: changed nodes, new edges, blocked items, forming clusters. Reuse intel-brief orchestration pattern.",
-      "status": "planned",
+      "description": "Phase 5 — Vercel cron (6 AM UTC / 11 PM PT) triggers QStash → /api/briefing/generate. Gathers 24h brain data (thoughts, tasks, alerts, edges, project activity), synthesizes via gpt-4o-mini, stores in briefings table. MCP tools: get_latest_briefing, list_briefings. REST: /api/brain/briefings.",
+      "status": "completed",
+      "completed": "2026-03-21",
       "priority": "P2",
       "source": "Nervous Center roadmap",
       "created": "2026-03-21"

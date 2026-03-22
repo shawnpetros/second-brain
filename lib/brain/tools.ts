@@ -14,6 +14,8 @@ import {
   insertEdge,
   queryEdgesByThought,
   removeEdge as removeEdgeQuery,
+  queryLatestBriefing,
+  queryBriefings,
   type ThoughtRecord,
   type EdgeRecord,
 } from "./queries";
@@ -276,4 +278,25 @@ export async function removeEdgeTool(edgeId: string): Promise<string> {
   return deleted
     ? `Deleted edge ${edgeId}.`
     : `No edge found with ID ${edgeId}.`;
+}
+
+// ── Briefing tools ──
+
+export async function getLatestBriefing(): Promise<string> {
+  const briefing = await queryLatestBriefing();
+  if (!briefing) return "No briefings generated yet.";
+
+  const date = new Date(briefing.created_at).toISOString().slice(0, 16).replace("T", " ");
+  return `**Morning Briefing** — ${date}\n\n${briefing.content}\n\n---\n_Model: ${briefing.model} | Cost: $${briefing.cost_usd} | Thoughts analyzed: ${briefing.thought_count}_`;
+}
+
+export async function listBriefings(limit = 5): Promise<string> {
+  const briefings = await queryBriefings(limit);
+  if (!briefings.length) return "No briefings generated yet.";
+
+  const lines = briefings.map((b) => {
+    const date = new Date(b.created_at).toISOString().slice(0, 10);
+    return `- **${date}** — ${b.thought_count} thoughts, $${b.cost_usd} | ID: ${b.id}`;
+  });
+  return `${briefings.length} briefing(s):\n\n${lines.join("\n")}`;
 }

@@ -22,6 +22,8 @@ The built-in memory system should only be used for project-specific coding conte
 - `add_edge` — create a typed directed edge between two thoughts (relates_to, blocks, caused_by, inspired_by, contradicts, child_of)
 - `list_edges` — show all edges connected to a thought
 - `remove_edge` — delete an edge by ID
+- `get_latest_briefing` — get the most recent morning briefing
+- `list_briefings` — list recent briefings with dates and stats
 - `add_service` — add a service/tool to business inventory (name, category, billing_model, projects, cost, notes)
 - `list_services` — list services with optional filters (category, project, status); shows cost totals
 - `update_service` — update any field on a service by ID

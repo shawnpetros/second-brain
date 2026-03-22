@@ -20,6 +20,8 @@ import {
   addEdge,
   listEdges,
   removeEdgeTool,
+  getLatestBriefing,
+  listBriefings,
 } from "@/lib/brain/tools";
 
 function createServer(): McpServer {
@@ -233,6 +235,28 @@ function createServer(): McpServer {
     },
     async ({ edge_id }) => ({
       content: [{ type: "text" as const, text: await removeEdgeTool(edge_id) }],
+    })
+  );
+
+  // ── Briefing tools ──
+
+  server.tool(
+    "get_latest_briefing",
+    "Get the most recent morning briefing — a synthesized summary of brain activity, open tasks, cross-project patterns, and priorities.",
+    {},
+    async () => ({
+      content: [{ type: "text" as const, text: await getLatestBriefing() }],
+    })
+  );
+
+  server.tool(
+    "list_briefings",
+    "List recent morning briefings with dates and stats.",
+    {
+      limit: z.coerce.number().int().min(1).max(30).default(5).describe("Maximum briefings to return."),
+    },
+    async ({ limit }) => ({
+      content: [{ type: "text" as const, text: await listBriefings(limit) }],
     })
   );
 
