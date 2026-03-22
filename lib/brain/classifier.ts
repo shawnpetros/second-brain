@@ -12,7 +12,7 @@ function getClient() {
   return _client;
 }
 
-const CLASSIFIER_MODEL = "claude-sonnet-4-6-20250514";
+const CLASSIFIER_MODEL = "claude-sonnet-4-6";
 
 export interface TaskClassification {
   thought_id: string;

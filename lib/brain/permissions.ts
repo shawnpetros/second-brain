@@ -51,15 +51,15 @@ export function selectModel(ctx: ActionContext): string {
   const { action, sourceThought } = ctx;
 
   if (action.action_type.startsWith("draft_") && action.stakes === "high") {
-    return "claude-opus-4-6-20250514";
+    return "claude-opus-4-6";
   }
 
   const hasSensitiveTopic = sourceThought.topics?.some((t) =>
     SENSITIVE_TOPICS.includes(t.toLowerCase())
   );
   if (hasSensitiveTopic && action.permission_tier === "staged") {
-    return "claude-opus-4-6-20250514";
+    return "claude-opus-4-6";
   }
 
-  return "claude-sonnet-4-6-20250514";
+  return "claude-sonnet-4-6";
 }

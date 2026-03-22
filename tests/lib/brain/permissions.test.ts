@@ -30,24 +30,24 @@ describe("selectModel", () => {
     expect(selectModel({
       action: { action_type: "research", stakes: "low", permission_tier: "auto" },
       sourceThought: { topics: ["coding"] },
-    })).toBe("claude-sonnet-4-6-20250514");
+    })).toBe("claude-sonnet-4-6");
   });
   it("returns opus for high-stakes drafts", () => {
     expect(selectModel({
       action: { action_type: "draft_email", stakes: "high", permission_tier: "staged" },
       sourceThought: { topics: ["client"] },
-    })).toBe("claude-opus-4-6-20250514");
+    })).toBe("claude-opus-4-6");
   });
   it("returns opus for medical topics in staged tier", () => {
     expect(selectModel({
       action: { action_type: "draft_email", stakes: "medium", permission_tier: "staged" },
       sourceThought: { topics: ["medical", "CSF leak"] },
-    })).toBe("claude-opus-4-6-20250514");
+    })).toBe("claude-opus-4-6");
   });
   it("does not use opus for auto-tier even with sensitive topics", () => {
     expect(selectModel({
       action: { action_type: "research", stakes: "medium", permission_tier: "auto" },
       sourceThought: { topics: ["medical"] },
-    })).toBe("claude-sonnet-4-6-20250514");
+    })).toBe("claude-sonnet-4-6");
   });
 });

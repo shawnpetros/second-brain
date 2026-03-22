@@ -16,7 +16,7 @@ import { calculateUrgencyScore, isForceResolution, isSnoozed } from "./urgency";
 import { classifyTasks, type TaskClassification } from "./classifier";
 import { getPermissionTier } from "./permissions";
 
-const BRIEFING_MODEL = "claude-sonnet-4-6-20250514";
+const BRIEFING_MODEL = "claude-sonnet-4-6";
 
 let _client: Anthropic | null = null;
 function getClient() {

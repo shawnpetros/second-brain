@@ -235,10 +235,10 @@ function computeCost(
 ): number {
   // Pricing per million tokens
   const pricing: Record<string, { input: number; output: number }> = {
-    "claude-opus-4-6-20250514": { input: 5, output: 25 },
-    "claude-sonnet-4-6-20250514": { input: 3, output: 15 },
+    "claude-opus-4-6": { input: 5, output: 25 },
+    "claude-sonnet-4-6": { input: 3, output: 15 },
   };
-  const rates = pricing[model] ?? pricing["claude-sonnet-4-6-20250514"];
+  const rates = pricing[model] ?? pricing["claude-sonnet-4-6"];
   return (
     (usage.input_tokens * rates.input + usage.output_tokens * rates.output) /
     1_000_000

@@ -10,10 +10,10 @@ describe("executor cost computation", () => {
     usage: { input_tokens: number; output_tokens: number }
   ): number {
     const pricing: Record<string, { input: number; output: number }> = {
-      "claude-opus-4-6-20250514": { input: 5, output: 25 },
-      "claude-sonnet-4-6-20250514": { input: 3, output: 15 },
+      "claude-opus-4-6": { input: 5, output: 25 },
+      "claude-sonnet-4-6": { input: 3, output: 15 },
     };
-    const rates = pricing[model] ?? pricing["claude-sonnet-4-6-20250514"];
+    const rates = pricing[model] ?? pricing["claude-sonnet-4-6"];
     return (
       (usage.input_tokens * rates.input + usage.output_tokens * rates.output) /
       1_000_000
@@ -21,7 +21,7 @@ describe("executor cost computation", () => {
   }
 
   it("computes sonnet cost correctly", () => {
-    const cost = computeCost("claude-sonnet-4-6-20250514", {
+    const cost = computeCost("claude-sonnet-4-6", {
       input_tokens: 3000,
       output_tokens: 2000,
     });
@@ -30,7 +30,7 @@ describe("executor cost computation", () => {
   });
 
   it("computes opus cost correctly", () => {
-    const cost = computeCost("claude-opus-4-6-20250514", {
+    const cost = computeCost("claude-opus-4-6", {
       input_tokens: 4000,
       output_tokens: 3000,
     });
