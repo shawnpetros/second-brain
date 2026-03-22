@@ -247,8 +247,8 @@ export async function insertThought(
   const status = thoughtType === "action_item" ? "untriaged" : "active";
 
   const rows = await sql()`
-    INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source, status)
-    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${thoughtType}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source}, ${status})
+    INSERT INTO thoughts (raw_text, embedding, thought_type, people, topics, action_items, source, status, deadline)
+    VALUES (${text}, ${JSON.stringify(embedding)}::vector, ${thoughtType}, ${metadata.people}, ${metadata.topics}, ${metadata.action_items}, ${source}, ${status}, ${metadata.deadline})
     RETURNING id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
   `;
   return rows[0] as ThoughtRecord;
@@ -600,6 +600,274 @@ export async function queryBriefings(limit = 10): Promise<BriefingRecord[]> {
   `;
   return rows as BriefingRecord[];
 }
+
+// ── Pending Actions ──
+
+export interface PendingActionRecord {
+  id: string;
+  thought_id: string;
+  briefing_id: string | null;
+  action_type: string;
+  permission_tier: "auto" | "staged" | "never";
+  status: string;
+  stakes: string | null;
+  model_used: string | null;
+  prompt_summary: string;
+  prompt_adjustments: string | null;
+  result: string | null;
+  result_metadata: Record<string, unknown>;
+  urgency_score: number;
+  expires_at: string;
+  reviewed_at: string | null;
+  retry_count: number;
+  failure_reason: string | null;
+  parent_action_id: string | null;
+  flagged: boolean;
+  flag_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function insertPendingAction(data: {
+  thoughtId: string;
+  briefingId?: string;
+  actionType: string;
+  permissionTier: "auto" | "staged" | "never";
+  stakes?: "low" | "medium" | "high";
+  promptSummary: string;
+  urgencyScore?: number;
+}): Promise<PendingActionRecord> {
+  const rows = await sql()`
+    INSERT INTO pending_actions (thought_id, briefing_id, action_type, permission_tier, stakes, prompt_summary, urgency_score)
+    VALUES (${data.thoughtId}, ${data.briefingId ?? null}, ${data.actionType}, ${data.permissionTier}, ${data.stakes ?? null}, ${data.promptSummary}, ${data.urgencyScore ?? 0})
+    RETURNING *
+  `;
+  return rows[0] as PendingActionRecord;
+}
+
+export async function queryPendingActions(filters: {
+  status?: string;
+  permissionTier?: string;
+  limit?: number;
+}): Promise<PendingActionRecord[]> {
+  const { status, permissionTier, limit = 20 } = filters;
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  let paramIdx = 1;
+
+  if (status) {
+    conditions.push(`status = $${paramIdx++}`);
+    params.push(status);
+  }
+  if (permissionTier) {
+    conditions.push(`permission_tier = $${paramIdx++}`);
+    params.push(permissionTier);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const rows = await sql()(
+    `SELECT * FROM pending_actions ${where}
+     ORDER BY urgency_score DESC, created_at DESC
+     LIMIT $${paramIdx++}`,
+    [...params, limit]
+  );
+  return rows as PendingActionRecord[];
+}
+
+export async function queryPendingActionById(id: string): Promise<PendingActionRecord | null> {
+  const rows = await sql()`
+    SELECT * FROM pending_actions WHERE id = ${id}
+  `;
+  return (rows[0] as PendingActionRecord) ?? null;
+}
+
+export async function queryPendingActionsByThought(thoughtId: string): Promise<PendingActionRecord[]> {
+  const rows = await sql()`
+    SELECT * FROM pending_actions WHERE thought_id = ${thoughtId}
+    ORDER BY created_at DESC
+  `;
+  return rows as PendingActionRecord[];
+}
+
+export async function updatePendingActionStatus(
+  id: string,
+  status: string,
+  extra?: { result?: string; resultMetadata?: Record<string, unknown>; modelUsed?: string; failureReason?: string }
+): Promise<PendingActionRecord | null> {
+  const setClauses = ["status = $2"];
+  const params: unknown[] = [id, status];
+  let paramIdx = 3;
+
+  if (status === "approved" || status === "rejected") {
+    setClauses.push(`reviewed_at = now()`);
+  }
+  if (extra?.result !== undefined) {
+    setClauses.push(`result = $${paramIdx++}`);
+    params.push(extra.result);
+  }
+  if (extra?.resultMetadata !== undefined) {
+    setClauses.push(`result_metadata = $${paramIdx++}`);
+    params.push(JSON.stringify(extra.resultMetadata));
+  }
+  if (extra?.modelUsed !== undefined) {
+    setClauses.push(`model_used = $${paramIdx++}`);
+    params.push(extra.modelUsed);
+  }
+  if (extra?.failureReason !== undefined) {
+    setClauses.push(`failure_reason = $${paramIdx++}`);
+    params.push(extra.failureReason);
+    setClauses.push(`retry_count = retry_count + 1`);
+  }
+
+  const rows = await sql()(
+    `UPDATE pending_actions SET ${setClauses.join(", ")}
+     WHERE id = $1 RETURNING *`,
+    params
+  );
+  return (rows[0] as PendingActionRecord) ?? null;
+}
+
+export async function flagPendingAction(
+  id: string,
+  reason?: string
+): Promise<PendingActionRecord | null> {
+  const rows = await sql()`
+    UPDATE pending_actions SET flagged = true, flag_reason = ${reason ?? null}
+    WHERE id = ${id} RETURNING *
+  `;
+  return (rows[0] as PendingActionRecord) ?? null;
+}
+
+export async function queryActionTypeHealth(
+  actionType: string,
+  days = 30
+): Promise<{ total: number; flagged: number; flagRate: number }> {
+  const rows = await sql()`
+    SELECT
+      COUNT(*) FILTER (WHERE status IN ('staged', 'approved', 'rejected', 'dismissed')) as total,
+      COUNT(*) FILTER (WHERE flagged = true) as flagged
+    FROM pending_actions
+    WHERE action_type = ${actionType}
+      AND created_at > now() - make_interval(days => ${days})
+  `;
+  const total = Number(rows[0].total);
+  const flagged = Number(rows[0].flagged);
+  return { total, flagged, flagRate: total > 0 ? flagged / total : 0 };
+}
+
+export async function queryFailedActions(limit = 5): Promise<PendingActionRecord[]> {
+  const rows = await sql()`
+    SELECT * FROM pending_actions
+    WHERE status = 'failed' AND retry_count < 2
+    ORDER BY urgency_score DESC, created_at DESC
+    LIMIT ${limit}
+  `;
+  return rows as PendingActionRecord[];
+}
+
+// ── Snooze ──
+
+export async function snoozeTask(
+  id: string,
+  days: 2 | 5 | 7
+): Promise<{ snoozedUntil: string; snoozeCount: number; snoozesRemaining: number } | { error: string }> {
+  // Check current snooze count
+  const check = await sql()`
+    SELECT snooze_count FROM thoughts WHERE id = ${id} AND thought_type = 'action_item'
+  `;
+  if (!check.length) return { error: `No action_item found with ID ${id}.` };
+
+  const currentCount = Number(check[0].snooze_count ?? 0);
+  if (currentCount >= 3) {
+    return { error: "This task has been snoozed 3 times. Complete it, delete it, or work on it." };
+  }
+
+  const rows = await sql()`
+    UPDATE thoughts SET
+      snoozed_until = now() + make_interval(days => ${days}),
+      snooze_count = snooze_count + 1,
+      action_classification = NULL
+    WHERE id = ${id} AND thought_type = 'action_item'
+    RETURNING snoozed_until, snooze_count
+  `;
+  if (!rows.length) return { error: `Failed to snooze task ${id}.` };
+
+  const newCount = Number(rows[0].snooze_count);
+  return {
+    snoozedUntil: rows[0].snoozed_until as string,
+    snoozeCount: newCount,
+    snoozesRemaining: 3 - newCount,
+  };
+}
+
+// ── Urgency Score Updates ──
+
+export async function updateThoughtUrgency(
+  id: string,
+  urgencyScore: number,
+  actionClassification?: string
+): Promise<void> {
+  if (actionClassification) {
+    await sql()`
+      UPDATE thoughts SET
+        urgency_score = ${urgencyScore},
+        urgency_updated_at = now(),
+        action_classification = ${actionClassification}
+      WHERE id = ${id}
+    `;
+  } else {
+    await sql()`
+      UPDATE thoughts SET
+        urgency_score = ${urgencyScore},
+        urgency_updated_at = now()
+      WHERE id = ${id}
+    `;
+  }
+}
+
+export async function updateThoughtDeadline(
+  id: string,
+  deadline: string
+): Promise<void> {
+  await sql()`
+    UPDATE thoughts SET deadline = ${deadline} WHERE id = ${id}
+  `;
+}
+
+// ── Permission Overrides ──
+
+export async function queryPermissionOverrides(): Promise<Record<string, string>> {
+  const rows = await sql()`
+    SELECT action_type, override_tier FROM permission_overrides
+  `;
+  const overrides: Record<string, string> = {};
+  for (const row of rows) {
+    overrides[row.action_type as string] = row.override_tier as string;
+  }
+  return overrides;
+}
+
+export async function insertPermissionOverride(
+  actionType: string,
+  overrideTier: "auto" | "staged",
+  reason?: string
+): Promise<void> {
+  await sql()`
+    INSERT INTO permission_overrides (action_type, override_tier, reason)
+    VALUES (${actionType}, ${overrideTier}, ${reason ?? null})
+    ON CONFLICT (action_type) DO UPDATE SET override_tier = ${overrideTier}, reason = ${reason ?? null}
+  `;
+}
+
+export async function removePermissionOverride(actionType: string): Promise<boolean> {
+  const rows = await sql()`
+    DELETE FROM permission_overrides WHERE action_type = ${actionType} RETURNING id
+  `;
+  return rows.length > 0;
+}
+
+// ── Briefings (existing, enhanced) ──
 
 export async function gatherBriefingData(): Promise<{
   recentThoughts: ThoughtRecord[];

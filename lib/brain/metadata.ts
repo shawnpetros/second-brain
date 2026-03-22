@@ -22,16 +22,19 @@ export interface ThoughtMetadata {
   people: string[];
   topics: string[];
   action_items: string[];
+  deadline: string | null;
 }
 
 const SYSTEM_PROMPT = `You are a metadata extraction assistant. Given a thought or note, extract structured metadata.
+Today's date is ${new Date().toISOString().slice(0, 10)}.
 
 Respond with ONLY valid JSON matching this schema:
 {
   "thought_type": one of ["decision", "insight", "meeting", "person_note", "idea", "action_item", "reflection", "reference", "milestone"],
   "people": [list of people mentioned by name, empty array if none],
   "topics": [2-5 topic keywords that capture the subject matter],
-  "action_items": [list of action items if any, empty array if none]
+  "action_items": [list of action items if any, empty array if none],
+  "deadline": "YYYY-MM-DD" or null
 }
 
 Guidelines:
@@ -45,7 +48,8 @@ Guidelines:
 - "reference": factual information, links, resources to remember
 - "milestone": a session summary, project accomplishment, shipped feature, or win. Use this for recaps of what was built/achieved/completed — NOT for tasks that still need doing
 - Extract ONLY names that are clearly people (not companies, products, etc.)
-- Topics should be 1-3 word phrases, lowercase`;
+- Topics should be 1-3 word phrases, lowercase
+- "deadline": If the text mentions a due date, deadline, or time-sensitive date (e.g. "by Tuesday", "due March 25", "this week", "before the interview"), convert it to an absolute YYYY-MM-DD date. Use today's date for reference. Return null if no deadline is mentioned or implied.`;
 
 let _client: OpenAI | null = null;
 function getClient() {
@@ -76,5 +80,6 @@ export async function extractMetadata(text: string): Promise<ThoughtMetadata> {
     people: result.people ?? [],
     topics: result.topics ?? [],
     action_items: result.action_items ?? [],
+    deadline: result.deadline ?? null,
   };
 }

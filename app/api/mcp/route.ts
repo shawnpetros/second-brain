@@ -22,6 +22,7 @@ import {
   removeEdgeTool,
   getLatestBriefing,
   listBriefings,
+  snoozeTask,
 } from "@/lib/brain/tools";
 
 function createServer(): McpServer {
@@ -235,6 +236,20 @@ function createServer(): McpServer {
     },
     async ({ edge_id }) => ({
       content: [{ type: "text" as const, text: await removeEdgeTool(edge_id) }],
+    })
+  );
+
+  // ── Snooze tool ──
+
+  server.tool(
+    "snooze_task",
+    "Snooze a task for a set number of days. The task won't appear in triage or briefings until it wakes. Snoozing doesn't reset the age clock — the task comes back at its original age. Max 3 snoozes per task.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the action_item to snooze."),
+      days: z.enum(["2", "5", "7"]).describe("How many days to snooze: 2, 5, or 7."),
+    },
+    async ({ thought_id, days }) => ({
+      content: [{ type: "text" as const, text: await snoozeTask(thought_id, Number(days) as 2 | 5 | 7) }],
     })
   );
 

@@ -16,6 +16,7 @@ import {
   removeEdge as removeEdgeQuery,
   queryLatestBriefing,
   queryBriefings,
+  snoozeTask as snoozeTaskQuery,
   type ThoughtRecord,
   type EdgeRecord,
 } from "./queries";
@@ -278,6 +279,17 @@ export async function removeEdgeTool(edgeId: string): Promise<string> {
   return deleted
     ? `Deleted edge ${edgeId}.`
     : `No edge found with ID ${edgeId}.`;
+}
+
+// ── Snooze tool ──
+
+export async function snoozeTask(
+  thoughtId: string,
+  days: 2 | 5 | 7
+): Promise<string> {
+  const result = await snoozeTaskQuery(thoughtId, days);
+  if ("error" in result) return result.error;
+  return `Snoozed task ${thoughtId} for ${days} days.\nWakes: ${new Date(result.snoozedUntil).toISOString().slice(0, 10)}\nSnoozes used: ${result.snoozeCount}/3 (${result.snoozesRemaining} remaining)`;
 }
 
 // ── Briefing tools ──
