@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Client } from "@upstash/qstash";
 import { generateBriefing } from "@/lib/brain/briefing";
+import { sendPushNotification } from "@/lib/notifications/send";
 
 export const maxDuration = 60;
 
@@ -62,6 +63,27 @@ export async function POST(req: NextRequest) {
           `Only dispatched ${dispatchedCount}/${result.plannedActionIds.length} actions`
         );
       }
+    }
+
+    // Send push notification if actions were planned
+    if (result.plannedActionIds.length > 0) {
+      const staged = result.classifications.filter(
+        (c) => c.action_classification === "draft_needed"
+      ).length;
+      const auto = result.classifications.filter(
+        (c) => c.action_classification === "auto_actionable"
+      ).length;
+
+      const parts: string[] = [];
+      if (staged > 0) parts.push(`${staged} draft${staged > 1 ? "s" : ""} for review`);
+      if (auto > 0) parts.push(`${auto} auto-completed`);
+
+      await sendPushNotification({
+        title: `${result.plannedActionIds.length} actions ready`,
+        body: parts.join(" + ") || "Check your approval queue",
+        url: "/dashboard/queue",
+        tag: "briefing-actions",
+      }).catch((err) => console.warn("Push notification failed:", err));
     }
 
     return Response.json({
