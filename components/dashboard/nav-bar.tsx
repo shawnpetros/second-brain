@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
-import { Brain, LayoutDashboard, MessageSquare, CheckSquare, Search, Sun } from "lucide-react";
+import { Brain, LayoutDashboard, MessageSquare, CheckSquare, Search, Sun, Inbox } from "lucide-react";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Thoughts", href: "/dashboard/thoughts", icon: MessageSquare },
   { label: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+  { label: "Queue", href: "/dashboard/queue", icon: Inbox },
   { label: "Briefing", href: "/dashboard/briefing", icon: Sun },
   { label: "Search", href: "/dashboard/search", icon: Search },
 ];
