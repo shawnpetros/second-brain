@@ -24,6 +24,9 @@ export const env = {
   get NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY() {
     return required("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
   },
+  get ANTHROPIC_API_KEY() {
+    return required("ANTHROPIC_API_KEY");
+  },
   get BRAIN_API_KEY() {
     return optional("BRAIN_API_KEY");
   },
