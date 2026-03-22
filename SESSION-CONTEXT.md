@@ -1,26 +1,23 @@
 # Session Context
 
 ## Status
-- Nervous Center Phases 0-5 complete and deployed in single session
-- Brain now auto-captures from 3 sources: session end, git commits, Vercel deploys
-- Morning briefing pipeline live (6 AM UTC daily cron)
-- 13 projects seeded, directed graph layer active
+- Nervous Center Phases 0-5 shipped and deployed. Brain is now agentic.
+- Auto-capture active: SessionEnd, git post-commit, Vercel deploy webhook
+- Morning briefing pipeline running (6 AM UTC daily)
 
 ## In-Flight
-- Nothing actively in-flight — all phases shipped
+- Nothing in-flight — all phases shipped
 
 ## Key Details
-- Auth: Clerk (dashboard), BRAIN_API_KEY (hooks/webhooks/capture API)
-- DB: 4 tables (thoughts, projects, thought_edges, briefings) + services
-- Global hooks: SessionStart (brain context), SessionEnd (session capture)
-- Git hooks: global core.hooksPath at ~/.config/git/hooks, chains to per-repo .local hooks
-- intel-app pre-commit preserved as pre-commit.local
-- QStash + CRON_SECRET configured on Vercel
-- Vercel deploy webhook needs manual setup in Vercel Dashboard
+- Auth: Clerk (dashboard), BRAIN_API_KEY (hooks/capture API), HMAC-SHA1 (Vercel webhook)
+- DB: 4 tables (thoughts, projects, thought_edges, briefings) + services, 9 migrations
+- Global git hooks: core.hooksPath → ~/.config/git/hooks (chains to per-repo .local)
+- Claude hooks: SessionStart (brain context inject), SessionEnd (auto-capture)
+- QStash + CRON_SECRET + VERCEL_WEBHOOK_SECRET all on Vercel
+- 8 new MCP tools (projects, edges, briefings), won't appear until next session reconnect
 
 ## Next Steps
-1. Configure Vercel deploy webhook in Dashboard (Settings → Webhooks → deployment.succeeded)
-2. Phase 6: Sleep consolidation job (semantic clustering, stale edge detection)
-3. Phase 7: D3 force graph visualization on dashboard
-4. Dashboard UI for projects view and briefings view
-# Phase 0 test
+1. Phase 6: Sleep consolidation job (semantic clustering, stale edge detection, cross-project patterns)
+2. Phase 7: D3 force graph visualization on dashboard
+3. Dashboard UI for projects view and briefings view
+4. Clean up the test milestone capture (ID: 903d64dc)
