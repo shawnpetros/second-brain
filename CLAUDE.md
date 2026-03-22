@@ -24,6 +24,16 @@ The built-in memory system should only be used for project-specific coding conte
 - `remove_edge` — delete an edge by ID
 - `get_latest_briefing` — get the most recent morning briefing
 - `list_briefings` — list recent briefings with dates and stats
+
+### REST-only endpoints (for hooks/webhooks, BRAIN_API_KEY auth)
+- `POST /api/capture` — lightweight capture for automated hooks (git, deploy, session-end)
+- `GET /api/brain/hook/project-context?path=` — project context for SessionStart hook
+- `POST /api/webhook/vercel-deploy?secret=` — Vercel deploy webhook receiver
+
+### Automated capture hooks (Phase 0)
+- **SessionEnd hook** — `~/.claude/hooks/brain-session-end.mjs` auto-captures session summary on exit
+- **Git post-commit** — `~/.config/git/hooks/post-commit` auto-captures commits as milestones
+- **Vercel deploy webhook** — `/api/webhook/vercel-deploy` auto-captures production deploys
 - `add_service` — add a service/tool to business inventory (name, category, billing_model, projects, cost, notes)
 - `list_services` — list services with optional filters (category, project, status); shows cost totals
 - `update_service` — update any field on a service by ID

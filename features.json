@@ -231,6 +231,16 @@
       "created": "2026-03-21"
     },
     {
+      "id": "feat-122",
+      "name": "Phase 0: Automated capture hooks",
+      "description": "Three automated capture hooks to stop losing signal: (1) SessionEnd hook auto-captures session summary on exit, (2) git post-commit hook auto-captures commits as milestones, (3) Vercel deploy webhook auto-captures production deploys. All use /api/capture endpoint with BRAIN_API_KEY auth.",
+      "status": "completed",
+      "completed": "2026-03-21",
+      "priority": "P1",
+      "source": "Nervous Center Phase 0 roadmap",
+      "created": "2026-03-21"
+    },
+    {
       "id": "feat-121",
       "name": "Nervous Center: D3 force graph visualization",
       "description": "Phase 7 — /graph route on dashboard. Nodes = thoughts, edges = thought_edges, color by type, filter by project.",
