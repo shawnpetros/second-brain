@@ -23,3 +23,4 @@
 2. Phase 6: Sleep consolidation job (semantic clustering, stale edge detection)
 3. Phase 7: D3 force graph visualization on dashboard
 4. Dashboard UI for projects view and briefings view
+# Phase 0 test
