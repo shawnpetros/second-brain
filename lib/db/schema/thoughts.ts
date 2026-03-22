@@ -1,6 +1,7 @@
 import { pgTable, text, uuid, timestamp, index } from "drizzle-orm/pg-core";
 import { vector } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { projects } from "./projects";
 
 export const thoughts = pgTable(
   "thoughts",
@@ -26,6 +27,9 @@ export const thoughts = pgTable(
     status: text("status").notNull().default("untriaged"),
     source: text("source").notNull().default("manual"),
     sourceRef: text("source_ref"),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .default(sql`now()`),

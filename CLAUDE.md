@@ -16,6 +16,12 @@ The built-in memory system should only be used for project-specific coding conte
 - `complete_task` — mark a task as completed (non-destructive, keeps the record)
 - `skip_task` — move a task from untriaged to active (defers it for later)
 - `untriage_task` — move a task back to untriaged status
+- `list_projects` — list all projects with thought counts
+- `get_project_context` — full project context: open tasks, decisions, milestones, insights, blocking edges
+- `assign_thought_project` — link a thought to a project by slug
+- `add_edge` — create a typed directed edge between two thoughts (relates_to, blocks, caused_by, inspired_by, contradicts, child_of)
+- `list_edges` — show all edges connected to a thought
+- `remove_edge` — delete an edge by ID
 - `add_service` — add a service/tool to business inventory (name, category, billing_model, projects, cost, notes)
 - `list_services` — list services with optional filters (category, project, status); shows cost totals
 - `update_service` — update any field on a service by ID
@@ -47,9 +53,10 @@ Migrations are idempotent — the runner skips already-applied files. Never edit
 ## Architecture: Dashboard + MCP Shared Data Layer
 
 The dashboard and MCP server share a single data layer:
-- `lib/brain/queries.ts` — all SQL, returns typed objects (ThoughtRecord, BrainStats, AlertItem)
+- `lib/brain/queries.ts` — all SQL, returns typed objects (ThoughtRecord, ProjectRecord, EdgeRecord, BrainStats, AlertItem)
 - `lib/brain/tools.ts` — MCP tool functions, delegates to queries.ts, formats results as markdown
 - `app/api/brain/*` — REST API routes for the dashboard, delegates to queries.ts, returns JSON
+- `app/api/brain/projects/[slug]/context` — project graph context endpoint (Phase 3 Nervous Center)
 - `lib/auth/dashboard-auth.ts` — Clerk + email allowlist guard for API routes
 - `app/dashboard/layout.tsx` — server-side auth gate (redirect if not signed in, "Not Authorized" if email not on allowlist)
 
@@ -63,4 +70,4 @@ Search terms: `second-brain`, `open-brain`, `dashboard`, `MCP server`, `thought 
 
 ## Feature Tracker
 
-See `features.json` — 14 features tracked. P1 features complete (dashboard, search, alerts, inline edit, input coercion). P2 planned: project scoping (feat-112), session context capture (feat-113). See `SESSION-CONTEXT.md` for current state.
+See `features.json` — tracks all features. P1 complete. Nervous Center build in progress (Phases 1-3 done: projects table, edges table, graph context API, MCP tools). See `SESSION-CONTEXT.md` for current state.

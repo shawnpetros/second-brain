@@ -31,6 +31,28 @@ export interface BrainStats {
   openTasks: number;
 }
 
+export interface ProjectRecord {
+  id: string;
+  name: string;
+  slug: string;
+  repo_path: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  thought_count?: number;
+}
+
+export interface EdgeRecord {
+  id: string;
+  from_thought_id: string;
+  to_thought_id: string;
+  edge_type: string;
+  weight: string;
+  created_at: string;
+  from_text?: string;
+  to_text?: string;
+}
+
 export interface AlertItem {
   type: "aging_untriaged" | "stale_active" | "relationship_decay";
   title: string;
@@ -377,4 +399,139 @@ export async function queryAlerts(): Promise<AlertItem[]> {
   }
 
   return alerts;
+}
+
+// ── Projects ──
+
+export async function queryProjects(): Promise<ProjectRecord[]> {
+  const rows = await sql()`
+    SELECT p.id, p.name, p.slug, p.repo_path, p.description, p.created_at, p.updated_at,
+           COUNT(t.id)::int as thought_count
+    FROM projects p
+    LEFT JOIN thoughts t ON t.project_id = p.id
+    GROUP BY p.id
+    ORDER BY thought_count DESC
+  `;
+  return rows as ProjectRecord[];
+}
+
+export async function queryProjectBySlug(slug: string): Promise<ProjectRecord | null> {
+  const rows = await sql()`
+    SELECT id, name, slug, repo_path, description, created_at, updated_at
+    FROM projects WHERE slug = ${slug}
+  `;
+  return (rows[0] as ProjectRecord) ?? null;
+}
+
+export async function queryProjectContext(slug: string): Promise<{
+  project: ProjectRecord;
+  openTasks: ThoughtRecord[];
+  recentDecisions: ThoughtRecord[];
+  lastMilestone: ThoughtRecord | null;
+  recentInsights: ThoughtRecord[];
+  blockingEdges: EdgeRecord[];
+} | null> {
+  const project = await queryProjectBySlug(slug);
+  if (!project) return null;
+
+  const db = sql();
+  const [tasks, decisions, milestones, insights, blocks] = await Promise.all([
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE project_id = ${project.id} AND thought_type = 'action_item' AND status IN ('untriaged', 'active')
+      ORDER BY created_at DESC LIMIT 10
+    `,
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE project_id = ${project.id} AND thought_type = 'decision'
+      ORDER BY created_at DESC LIMIT 5
+    `,
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE project_id = ${project.id} AND thought_type = 'milestone'
+      ORDER BY created_at DESC LIMIT 1
+    `,
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE project_id = ${project.id} AND thought_type = 'insight'
+      ORDER BY created_at DESC LIMIT 5
+    `,
+    db`
+      SELECT e.id, e.from_thought_id, e.to_thought_id, e.edge_type, e.weight, e.created_at,
+        t_from.raw_text as from_text,
+        t_to.raw_text as to_text
+      FROM thought_edges e
+      JOIN thoughts t_from ON t_from.id = e.from_thought_id
+      JOIN thoughts t_to ON t_to.id = e.to_thought_id
+      WHERE e.edge_type = 'blocks'
+        AND (t_from.project_id = ${project.id} OR t_to.project_id = ${project.id})
+      ORDER BY e.created_at DESC LIMIT 10
+    `,
+  ]);
+
+  return {
+    project,
+    openTasks: tasks as ThoughtRecord[],
+    recentDecisions: decisions as ThoughtRecord[],
+    lastMilestone: (milestones[0] as ThoughtRecord) ?? null,
+    recentInsights: insights as ThoughtRecord[],
+    blockingEdges: blocks as EdgeRecord[],
+  };
+}
+
+export async function assignThoughtProject(
+  thoughtId: string,
+  projectSlug: string
+): Promise<ThoughtRecord | null> {
+  const project = await queryProjectBySlug(projectSlug);
+  if (!project) return null;
+
+  const rows = await sql()`
+    UPDATE thoughts SET project_id = ${project.id}
+    WHERE id = ${thoughtId}
+    RETURNING id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+  `;
+  return (rows[0] as ThoughtRecord) ?? null;
+}
+
+// ── Edges ──
+
+export async function insertEdge(
+  fromThoughtId: string,
+  toThoughtId: string,
+  edgeType: string,
+  weight = 1.0
+): Promise<EdgeRecord> {
+  const rows = await sql()`
+    INSERT INTO thought_edges (from_thought_id, to_thought_id, edge_type, weight)
+    VALUES (${fromThoughtId}, ${toThoughtId}, ${edgeType}, ${weight})
+    ON CONFLICT (from_thought_id, to_thought_id, edge_type) DO UPDATE SET weight = ${weight}
+    RETURNING id, from_thought_id, to_thought_id, edge_type, weight, created_at
+  `;
+  return rows[0] as EdgeRecord;
+}
+
+export async function queryEdgesByThought(thoughtId: string): Promise<EdgeRecord[]> {
+  const rows = await sql()`
+    SELECT e.id, e.from_thought_id, e.to_thought_id, e.edge_type, e.weight, e.created_at,
+      t_from.raw_text as from_text,
+      t_to.raw_text as to_text
+    FROM thought_edges e
+    JOIN thoughts t_from ON t_from.id = e.from_thought_id
+    JOIN thoughts t_to ON t_to.id = e.to_thought_id
+    WHERE e.from_thought_id = ${thoughtId} OR e.to_thought_id = ${thoughtId}
+    ORDER BY e.weight DESC, e.created_at DESC
+  `;
+  return rows as EdgeRecord[];
+}
+
+export async function removeEdge(id: string): Promise<boolean> {
+  const rows = await sql()`
+    DELETE FROM thought_edges WHERE id = ${id} RETURNING id
+  `;
+  return rows.length > 0;
 }

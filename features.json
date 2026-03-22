@@ -146,7 +146,8 @@
       "id": "feat-112",
       "name": "Project scoping for thoughts",
       "description": "Add optional 'project' field to thoughts. Enable project-filtered views in dashboard, project-scoped triage at session start, and a 'project issues' view. Supports the emerging pattern of second-brain as a cross-project issue tracker.",
-      "status": "planned",
+      "status": "completed",
+      "completed": "2026-03-21",
       "priority": "P2",
       "source": "brain insight (37512f6a, c35b2565)",
       "created": "2026-03-16"
@@ -179,6 +180,62 @@
       "priority": "P1",
       "source": "business audit session",
       "created": "2026-03-18"
+    },
+    {
+      "id": "feat-116",
+      "name": "Nervous Center: Directed graph layer",
+      "description": "projects table, thought_edges table (relates_to, blocks, caused_by, inspired_by, contradicts, child_of), project_id FK on thoughts. 13 projects seeded, 158 thoughts backfilled. 6 new MCP tools: list_projects, get_project_context, assign_thought_project, add_edge, list_edges, remove_edge.",
+      "status": "completed",
+      "completed": "2026-03-21",
+      "priority": "P1",
+      "source": "Nervous Center architecture session",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "feat-117",
+      "name": "Nervous Center: Project context API",
+      "description": "REST endpoint /api/projects/[slug]/context — returns structured graph context (open tasks, decisions, milestones, insights, blocking edges). Powers Phase 4 auto-inject on session start.",
+      "status": "completed",
+      "completed": "2026-03-21",
+      "priority": "P1",
+      "source": "Nervous Center architecture session",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "feat-118",
+      "name": "Nervous Center: Global CLAUDE.md hook",
+      "description": "Phase 4 — on Claude Code session start in any project dir, auto-fetch project context via /api/projects/[slug]/context and inject as context preamble.",
+      "status": "planned",
+      "priority": "P1",
+      "source": "Nervous Center roadmap",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "feat-119",
+      "name": "Nervous Center: Morning briefing pipeline",
+      "description": "Phase 5 — QStash-powered morning briefing that walks the graph: changed nodes, new edges, blocked items, forming clusters. Reuse intel-brief orchestration pattern.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "Nervous Center roadmap",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "feat-120",
+      "name": "Nervous Center: Sleep consolidation job",
+      "description": "Phase 6 — nightly QStash job: semantic cluster scan, stale edge detection, cross-project pattern detection, thread head advancement.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "Nervous Center roadmap",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "feat-121",
+      "name": "Nervous Center: D3 force graph visualization",
+      "description": "Phase 7 — /graph route on dashboard. Nodes = thoughts, edges = thought_edges, color by type, filter by project.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "Nervous Center roadmap",
+      "created": "2026-03-21"
     }
   ]
 }

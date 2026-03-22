@@ -14,6 +14,12 @@ import {
   completeTask,
   skipTask,
   untriageTask,
+  listProjectsTool,
+  getProjectContext,
+  assignProject,
+  addEdge,
+  listEdges,
+  removeEdgeTool,
 } from "@/lib/brain/tools";
 
 function createServer(): McpServer {
@@ -153,6 +159,80 @@ function createServer(): McpServer {
     },
     async ({ thought_id }) => ({
       content: [{ type: "text" as const, text: await untriageTask(thought_id) }],
+    })
+  );
+
+  // ── Project tools ──
+
+  server.tool(
+    "list_projects",
+    "List all projects in the brain with thought counts. Projects are first-class entities linked to thoughts.",
+    {},
+    async () => ({
+      content: [{ type: "text" as const, text: await listProjectsTool() }],
+    })
+  );
+
+  server.tool(
+    "get_project_context",
+    "Get full context for a project — open tasks, recent decisions, last milestone, insights, and blocking edges. Use this at session start to load project state.",
+    {
+      slug: z.string().describe("Project slug (e.g. 'intel-app', 'second-brain', 'content-pipeline')."),
+    },
+    async ({ slug }) => ({
+      content: [{ type: "text" as const, text: await getProjectContext(slug) }],
+    })
+  );
+
+  server.tool(
+    "assign_thought_project",
+    "Assign a thought to a project. Links the thought to a project entity for project-scoped views and context.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the thought to assign."),
+      project_slug: z.string().describe("The project slug to assign to."),
+    },
+    async ({ thought_id, project_slug }) => ({
+      content: [{ type: "text" as const, text: await assignProject(thought_id, project_slug) }],
+    })
+  );
+
+  // ── Edge tools ──
+
+  server.tool(
+    "add_edge",
+    "Create a typed directed edge between two thoughts. Edge types: relates_to, blocks, caused_by, inspired_by, contradicts, child_of. If the edge already exists, updates its weight.",
+    {
+      from_thought_id: z.string().uuid().describe("Source thought UUID."),
+      to_thought_id: z.string().uuid().describe("Target thought UUID."),
+      edge_type: z.enum(["relates_to", "blocks", "caused_by", "inspired_by", "contradicts", "child_of"])
+        .describe("Relationship type between the thoughts."),
+      weight: z.coerce.number().min(0).max(10).default(1.0)
+        .describe("Edge weight (0-10). Higher = stronger relationship. Default 1.0."),
+    },
+    async ({ from_thought_id, to_thought_id, edge_type, weight }) => ({
+      content: [{ type: "text" as const, text: await addEdge(from_thought_id, to_thought_id, edge_type, weight) }],
+    })
+  );
+
+  server.tool(
+    "list_edges",
+    "List all edges connected to a thought (both inbound and outbound). Shows relationship type, weight, and connected thought previews.",
+    {
+      thought_id: z.string().uuid().describe("The UUID of the thought to find edges for."),
+    },
+    async ({ thought_id }) => ({
+      content: [{ type: "text" as const, text: await listEdges(thought_id) }],
+    })
+  );
+
+  server.tool(
+    "remove_edge",
+    "Delete an edge between two thoughts by its edge ID.",
+    {
+      edge_id: z.string().uuid().describe("The UUID of the edge to delete."),
+    },
+    async ({ edge_id }) => ({
+      content: [{ type: "text" as const, text: await removeEdgeTool(edge_id) }],
     })
   );
 

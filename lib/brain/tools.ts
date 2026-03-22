@@ -8,7 +8,14 @@ import {
   removeThought,
   queryThoughts,
   updateTaskStatus,
+  queryProjects,
+  queryProjectContext,
+  assignThoughtProject,
+  insertEdge,
+  queryEdgesByThought,
+  removeEdge as removeEdgeQuery,
   type ThoughtRecord,
+  type EdgeRecord,
 } from "./queries";
 
 function formatThought(row: ThoughtRecord): string {
@@ -161,4 +168,112 @@ export async function untriageTask(thoughtId: string): Promise<string> {
   const row = await updateTaskStatus(thoughtId, "untriaged");
   if (!row) return `No action_item found with ID ${thoughtId}.`;
   return `Moved back to untriaged: ${row.raw_text}\nID: ${row.id}`;
+}
+
+// ── Project tools ──
+
+export async function listProjectsTool(): Promise<string> {
+  const projects = await queryProjects();
+  if (!projects.length) return "No projects found.";
+
+  const lines = projects.map((p) => {
+    const count = p.thought_count ?? 0;
+    const desc = p.description ? ` — ${p.description}` : "";
+    return `  **${p.name}** (${p.slug}) — ${count} thoughts${desc}`;
+  });
+  return `${projects.length} projects:\n\n${lines.join("\n")}`;
+}
+
+export async function getProjectContext(slug: string): Promise<string> {
+  const ctx = await queryProjectContext(slug);
+  if (!ctx) return `No project found with slug '${slug}'.`;
+
+  const parts: string[] = [
+    `## ${ctx.project.name} — Project Context`,
+    "",
+  ];
+
+  // Last milestone
+  if (ctx.lastMilestone) {
+    parts.push("### Last Milestone");
+    parts.push(formatThought(ctx.lastMilestone));
+    parts.push("");
+  }
+
+  // Open tasks
+  if (ctx.openTasks.length) {
+    parts.push(`### Open Tasks (${ctx.openTasks.length})`);
+    for (const t of ctx.openTasks) parts.push(formatThought(t));
+    parts.push("");
+  } else {
+    parts.push("### Open Tasks\nNone");
+    parts.push("");
+  }
+
+  // Recent decisions
+  if (ctx.recentDecisions.length) {
+    parts.push(`### Recent Decisions (${ctx.recentDecisions.length})`);
+    for (const t of ctx.recentDecisions) parts.push(formatThought(t));
+    parts.push("");
+  }
+
+  // Recent insights
+  if (ctx.recentInsights.length) {
+    parts.push(`### Recent Insights (${ctx.recentInsights.length})`);
+    for (const t of ctx.recentInsights) parts.push(formatThought(t));
+    parts.push("");
+  }
+
+  // Blocking edges
+  if (ctx.blockingEdges.length) {
+    parts.push(`### Blocking Relationships (${ctx.blockingEdges.length})`);
+    for (const e of ctx.blockingEdges) {
+      parts.push(formatEdge(e));
+    }
+    parts.push("");
+  }
+
+  return parts.join("\n");
+}
+
+export async function assignProject(
+  thoughtId: string,
+  projectSlug: string
+): Promise<string> {
+  const row = await assignThoughtProject(thoughtId, projectSlug);
+  if (!row) return `Could not assign — check thought ID and project slug.`;
+  return `Assigned thought to project '${projectSlug}':\n  ${row.raw_text}\n  ID: ${row.id}`;
+}
+
+// ── Edge tools ──
+
+function formatEdge(edge: EdgeRecord): string {
+  const fromPreview = edge.from_text?.slice(0, 80) ?? edge.from_thought_id;
+  const toPreview = edge.to_text?.slice(0, 80) ?? edge.to_thought_id;
+  return `  [${edge.edge_type}] (weight: ${edge.weight}) ${fromPreview}... → ${toPreview}...\n  Edge ID: ${edge.id}`;
+}
+
+export async function addEdge(
+  fromThoughtId: string,
+  toThoughtId: string,
+  edgeType: string,
+  weight = 1.0
+): Promise<string> {
+  const edge = await insertEdge(fromThoughtId, toThoughtId, edgeType, weight);
+  return `Created edge: ${edge.from_thought_id} —[${edge.edge_type}]→ ${edge.to_thought_id}\nWeight: ${edge.weight}\nEdge ID: ${edge.id}`;
+}
+
+export async function listEdges(thoughtId: string): Promise<string> {
+  const edges = await queryEdgesByThought(thoughtId);
+  if (!edges.length) return `No edges found for thought ${thoughtId}.`;
+
+  const lines = edges.map(formatEdge);
+  return `${edges.length} edge(s) for thought ${thoughtId}:\n\n${lines.join("\n\n")}`;
+}
+
+export async function removeEdgeTool(edgeId: string): Promise<string> {
+  const deleted = await removeEdgeQuery(edgeId);
+  return deleted
+    ? `Deleted edge ${edgeId}.`
+    : `No edge found with ID ${edgeId}.`;
 }
