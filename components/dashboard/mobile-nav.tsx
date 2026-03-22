@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, CheckSquare, Search } from "lucide-react";
+import { LayoutDashboard, MessageSquare, CheckSquare, Search, Sun } from "lucide-react";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Thoughts", href: "/dashboard/thoughts", icon: MessageSquare },
   { label: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+  { label: "Briefing", href: "/dashboard/briefing", icon: Sun },
   { label: "Search", href: "/dashboard/search", icon: Search },
 ];
 
