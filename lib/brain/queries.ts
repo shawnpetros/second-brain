@@ -483,6 +483,28 @@ export async function queryProjectContext(slug: string): Promise<{
   };
 }
 
+export async function queryProjectByRepoPath(repoPath: string): Promise<ProjectRecord | null> {
+  // Try exact match first, then match by directory basename
+  const rows = await sql()`
+    SELECT id, name, slug, repo_path, description, created_at, updated_at
+    FROM projects
+    WHERE repo_path = ${repoPath}
+    LIMIT 1
+  `;
+  if (rows[0]) return rows[0] as ProjectRecord;
+
+  // Fallback: match directory basename against slug
+  const basename = repoPath.split("/").pop() || "";
+  const slugified = basename.replace(/\./g, "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  const fallback = await sql()`
+    SELECT id, name, slug, repo_path, description, created_at, updated_at
+    FROM projects
+    WHERE slug = ${slugified} OR slug = ${basename}
+    LIMIT 1
+  `;
+  return (fallback[0] as ProjectRecord) ?? null;
+}
+
 export async function assignThoughtProject(
   thoughtId: string,
   projectSlug: string
