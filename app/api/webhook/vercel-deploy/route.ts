@@ -1,34 +1,42 @@
 import { NextRequest } from "next/server";
+import { createHmac } from "node:crypto";
 import { insertThought } from "@/lib/brain/queries";
+
+const WEBHOOK_SECRET = process.env.VERCEL_WEBHOOK_SECRET;
 
 /**
  * Vercel Deploy Webhook — auto-captures production deploys as milestones.
  *
- * Configure in Vercel Dashboard → Settings → Webhooks:
- * URL: https://second-brain.shawnpetros.com/api/webhook/vercel-deploy
- * Events: deployment.succeeded
- * Secret: BRAIN_API_KEY value
- *
- * Vercel signs webhooks — we verify via the secret.
+ * Vercel signs webhooks with HMAC-SHA1 using the webhook secret.
+ * Signature is in the x-vercel-signature header.
  */
 export async function POST(req: NextRequest) {
-  // Verify webhook secret (Vercel sends as query param or header)
-  const secret = req.nextUrl.searchParams.get("secret");
-  const apiKey = process.env.BRAIN_API_KEY;
+  const rawBody = await req.text();
 
-  if (!apiKey || secret !== apiKey) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  // Verify HMAC signature
+  if (WEBHOOK_SECRET) {
+    const signature = req.headers.get("x-vercel-signature");
+    const expected = createHmac("sha1", WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest("hex");
+
+    if (signature !== expected) {
+      return Response.json({ error: "Invalid signature" }, { status: 401 });
+    }
   }
 
-  const body = await req.json();
+  const body = JSON.parse(rawBody);
 
   // Only capture production deploys that succeeded
-  const target = body.payload?.deployment?.meta?.githubCommitRef
-    ?? body.payload?.target
-    ?? body.target;
-  const state = body.payload?.deployment?.state ?? body.type;
+  const eventType = body.type; // "deployment.succeeded"
+  if (eventType !== "deployment.succeeded") {
+    return Response.json({ skipped: eventType });
+  }
 
-  // Filter: only production deploys
+  const target = body.payload?.deployment?.meta?.githubCommitRef
+    ?? body.payload?.target;
+
+  // Filter: only production (main branch) deploys
   if (target !== "main" && body.payload?.target !== "production") {
     return Response.json({ skipped: "not production" });
   }
@@ -40,14 +48,12 @@ export async function POST(req: NextRequest) {
     ?? "unknown-project";
   const commitMessage =
     body.payload?.deployment?.meta?.githubCommitMessage
-    ?? body.payload?.meta?.githubCommitMessage
     ?? "";
   const commitSha =
     body.payload?.deployment?.meta?.githubCommitSha?.slice(0, 7)
     ?? "";
   const url =
     body.payload?.deployment?.url
-    ?? body.payload?.url
     ?? "";
 
   const text = `DEPLOY (${project}): Production deploy succeeded.
