@@ -1,23 +1,23 @@
 # Session Context
 
 ## Status
-- Autonomous Action Queue Phase 1: 12/14 tasks complete on `feat/action-queue` branch
-- 127 tests passing, zero type errors, branch pushed to remote
-- 8 commits ahead of main — ready for integration testing + deploy
+- Autonomous Action Queue Phase 1: COMPLETE and deployed to production
+- 14/14 tasks done, 127 tests passing, pipeline verified end-to-end ($0.036/cycle)
+- First real briefing generated with 10 classifications, 3 planned actions, Sonnet-powered
 
 ## In-Flight
-- `feat/action-queue` branch — full pipeline implemented end-to-end
-- Implementation plan: `docs/superpowers/plans/2026-03-22-autonomous-action-queue.md`
-- Design spec: `docs/superpowers/specs/2026-03-22-autonomous-action-queue-design.md`
+- Cron set to 4 AM PT (11 UTC) — first autonomous run tomorrow morning
+- 3 actions currently staged in approval queue (CSF complaint, attorney intake, Intel Brief recs)
+- Deadline backfill completed (5/23 tasks enriched)
 
 ## Key Details
-- Migration 010 needs to be applied: `npm run db:migrate`
-- ANTHROPIC_API_KEY added to Vercel (all envs) — needs to be in .env.local for dev
-- VAPID keys not yet generated — run `npx web-push generate-vapid-keys` and add to Vercel env
-- Embedding migration (ada-002 → Voyage) is a separate PR, not blocking
+- ANTHROPIC_API_KEY, VAPID keys all set in Vercel (prod/preview/dev)
+- Model IDs: `claude-sonnet-4-6` and `claude-opus-4-6` (no date suffix — API rejects dated variants)
+- Vercel deployment protection blocks manual API triggers — use local tsx or cron
+- Session-end hook still broken (captured as action item)
 
 ## Next Steps
-1. Task 13: Integration test — run migration, trigger briefing/generate manually, verify action queue flow end-to-end
-2. Task 14: Deploy — merge to main, verify Vercel build, test dashboard/queue page live
-3. Generate VAPID keys and configure push notifications
-4. Post-deploy: verify cron fires at 6AM, actions dispatch, queue populates
+1. Review staged actions in /dashboard/queue (CSF email, attorney intake)
+2. Phase 2 planning: artifact routing on approval, content pipeline convergence, Mac mini daemon
+3. Fix session-end hook
+4. Embedding migration (ada-002 → Voyage 3.5-large) — separate PR
