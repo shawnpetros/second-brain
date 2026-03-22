@@ -36,7 +36,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
-      <main className="p-4 md:p-6 pb-20 md:pb-6 max-w-6xl mx-auto">
+      <main className="p-4 md:p-6 max-w-6xl mx-auto" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
         {children}
       </main>
       <MobileNav />

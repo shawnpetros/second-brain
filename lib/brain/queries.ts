@@ -604,13 +604,16 @@ export async function queryBriefings(limit = 10): Promise<BriefingRecord[]> {
 export async function gatherBriefingData(): Promise<{
   recentThoughts: ThoughtRecord[];
   openTasks: ThoughtRecord[];
+  staleTasks: ThoughtRecord[];
+  unactedDecisions: ThoughtRecord[];
+  dormantIdeas: ThoughtRecord[];
   projectSummaries: { slug: string; name: string; thought_count: number }[];
   alerts: AlertItem[];
   newEdges: EdgeRecord[];
 }> {
   const db = sql();
 
-  const [recent, tasks, projects, alertData, edges] = await Promise.all([
+  const [recent, tasks, stale, decisions, ideas, projects, alertData, edges] = await Promise.all([
     // Thoughts from last 24h
     db`
       SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
@@ -626,6 +629,37 @@ export async function gatherBriefingData(): Promise<{
       WHERE thought_type = 'action_item' AND status IN ('untriaged', 'active')
       ORDER BY created_at DESC
       LIMIT 30
+    `,
+    // Stale tasks — active for 7+ days without update, or untriaged for 3+ days
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at,
+        EXTRACT(DAY FROM now() - COALESCE(updated_at, created_at))::int as days_stale
+      FROM thoughts
+      WHERE thought_type = 'action_item'
+        AND ((status = 'active' AND updated_at < now() - interval '7 days')
+          OR (status = 'untriaged' AND created_at < now() - interval '3 days'))
+      ORDER BY created_at ASC
+      LIMIT 15
+    `,
+    // Decisions from last 14 days — check for unacted-on ones
+    db`
+      SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+      FROM thoughts
+      WHERE thought_type = 'decision'
+        AND created_at > now() - interval '14 days'
+      ORDER BY created_at DESC
+      LIMIT 10
+    `,
+    // Ideas captured but never developed (no edges, no follow-up, 7+ days old)
+    db`
+      SELECT t.id, t.raw_text, t.thought_type, t.status, t.people, t.topics, t.action_items, t.source, t.created_at, t.updated_at
+      FROM thoughts t
+      LEFT JOIN thought_edges e ON e.from_thought_id = t.id OR e.to_thought_id = t.id
+      WHERE t.thought_type = 'idea'
+        AND t.created_at < now() - interval '7 days'
+        AND e.id IS NULL
+      ORDER BY t.created_at DESC
+      LIMIT 10
     `,
     // Project summaries with recent thought counts
     db`
@@ -654,6 +688,9 @@ export async function gatherBriefingData(): Promise<{
   return {
     recentThoughts: recent as ThoughtRecord[],
     openTasks: tasks as ThoughtRecord[],
+    staleTasks: stale as ThoughtRecord[],
+    unactedDecisions: decisions as ThoughtRecord[],
+    dormantIdeas: ideas as ThoughtRecord[],
     projectSummaries: projects as { slug: string; name: string; thought_count: number }[],
     alerts: alertData,
     newEdges: edges as EdgeRecord[],

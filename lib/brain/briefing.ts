@@ -21,13 +21,16 @@ function formatThoughtCompact(t: ThoughtRecord): string {
 function buildBriefingPrompt(data: {
   recentThoughts: ThoughtRecord[];
   openTasks: ThoughtRecord[];
+  staleTasks: ThoughtRecord[];
+  unactedDecisions: ThoughtRecord[];
+  dormantIdeas: ThoughtRecord[];
   projectSummaries: { slug: string; name: string; thought_count: number }[];
   alerts: AlertItem[];
   newEdges: EdgeRecord[];
 }): string {
   const sections: string[] = [];
 
-  // Recent thoughts
+  // Recent thoughts (context for the LLM)
   if (data.recentThoughts.length) {
     sections.push("## Recent Activity (last 24h)");
     sections.push(`${data.recentThoughts.length} new thoughts captured.`);
@@ -47,6 +50,16 @@ function buildBriefingPrompt(data: {
     sections.push("");
   }
 
+  // Stale / aging tasks — key friction signal
+  if (data.staleTasks.length) {
+    sections.push(`## STALE TASKS — FRICTION SIGNAL (${data.staleTasks.length})`);
+    for (const t of data.staleTasks) {
+      const days = (t as ThoughtRecord & { days_stale?: number }).days_stale ?? "?";
+      sections.push(`- [${t.status}, ${days}d stale] ${t.raw_text.slice(0, 200)} (ID: ${t.id})`);
+    }
+    sections.push("");
+  }
+
   // Open tasks
   if (data.openTasks.length) {
     sections.push(`## Open Tasks (${data.openTasks.length})`);
@@ -60,6 +73,24 @@ function buildBriefingPrompt(data: {
     if (active.length) {
       sections.push(`### Active (${active.length})`);
       for (const t of active.slice(0, 10)) sections.push(formatThoughtCompact(t));
+    }
+    sections.push("");
+  }
+
+  // Unacted decisions — things decided but not followed through
+  if (data.unactedDecisions.length) {
+    sections.push(`## Recent Decisions (last 14d) — check for follow-through`);
+    for (const t of data.unactedDecisions) {
+      sections.push(formatThoughtCompact(t));
+    }
+    sections.push("");
+  }
+
+  // Dormant ideas — captured but never connected or developed
+  if (data.dormantIdeas.length) {
+    sections.push(`## Dormant Ideas (7+ days, no edges) — dropped threads?`);
+    for (const t of data.dormantIdeas) {
+      sections.push(formatThoughtCompact(t));
     }
     sections.push("");
   }
@@ -121,37 +152,55 @@ export async function generateBriefing(): Promise<{
     messages: [
       {
         role: "system",
-        content: `You are the Morning Briefing synthesizer for Shawn Petros's second brain — a personal knowledge graph.
+        content: `You are Shawn Petros's strategic advisor — an intelligence analyst for his personal knowledge graph (second brain). You see everything he's working on across all projects, and your job is to surface what he's MISSING, not recap what he already knows.
 
-Your job: analyze the raw brain data below and produce a concise, actionable morning briefing. This is a personal briefing, not a report for others.
+Shawn is a staff-level engineer running multiple projects simultaneously. He does not need a summary of what he shipped. He needs to see: friction, dropped threads, inefficiencies, pain patterns, and opportunities he's too close to notice.
 
-FORMAT:
+PRODUCE THIS FORMAT:
+
 ## Morning Briefing — {today's date}
 
-### What Happened
-2-3 sentence narrative of yesterday's activity. Mention specific projects and decisions by name.
+### Friction & Pain Points
+What's causing repeated rework, blocking progress, or generating the most noise without resolution? Look for:
+- Tasks that keep getting deferred (untriaged > 3 days, active > 14 days)
+- The same problem appearing in multiple projects
+- Decisions that were made but never acted on
+- Work that contradicts or duplicates other work
+
+### Dropped Threads
+What was started or discussed but has gone quiet? Look for:
+- Action items that haven't moved
+- People who were mentioned but not followed up with
+- Ideas that were captured but never developed
+- Blocking relationships with no resolution
 
 ### Priority Actions
-Numbered list (max 5) of the most important things to do today. Pull from untriaged tasks, aging alerts, and any blocking relationships. Be specific — "triage the 3 untriaged tasks from last night" not "review tasks."
+Numbered list (max 5) of the highest-leverage things to do today. Not busywork — the things that unblock the most, close the most loops, or prevent the most damage. Be specific with project slugs and thought IDs.
 
-### Cross-Project Patterns
-If you notice themes across multiple projects (same friction, same person, related decisions), call them out in 1-2 sentences. If none, skip this section.
+### Pattern Intelligence
+Cross-project patterns, emerging themes, or connections between thoughts that might not be obvious:
+- Same friction showing up in different projects? Call it out.
+- An insight from one project that could solve a problem in another?
+- Content or research that's relevant to current work but hasn't been connected?
+- Recurring topics or people that suggest a relationship worth strengthening?
 
-### Heads Up
-Anything that needs attention soon — aging tasks, relationship decay, stale items. If nothing, skip.
+### Process Improvements
+If you notice inefficiencies in how work is being done — rework, manual steps that could be automated, patterns that suggest a tool or process change — surface them. One or two sentences max. Skip if nothing stands out.
 
 RULES:
-- Be direct. No pleasantries. Shawn is a staff-level engineer, not a student.
-- Refer to projects by their slug name.
-- If there's nothing actionable, say so in one line and stop.
-- Under 400 words total.`,
+- Be direct and blunt. This is an intelligence brief, not a newsletter.
+- Never lead with "Great work yesterday" or any celebration. Start with problems.
+- Refer to projects by slug. Include thought IDs when referencing specific items.
+- If an alert is aging, say exactly how many days and what the cost of inaction is.
+- If there's genuinely nothing to flag, say "Clean slate" and stop. Don't pad.
+- Under 600 words total.`,
       },
       {
         role: "user",
         content: context,
       },
     ],
-    max_tokens: 800,
+    max_tokens: 1200,
   });
 
   const content = completion.choices[0]?.message?.content ?? "Failed to generate briefing.";

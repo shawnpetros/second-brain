@@ -64,7 +64,7 @@ export function ThoughtCard({ thought, onUpdate, onDelete, showSimilarity }: Tho
   const typeName = thought.thought_type.replace(/_/g, " ");
 
   return (
-    <Card className="group">
+    <Card className="group border-border/50 transition-colors hover:border-border">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">

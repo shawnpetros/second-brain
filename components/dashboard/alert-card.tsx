@@ -22,7 +22,7 @@ export function AlertCard({ alert, onAction }: AlertCardProps) {
   const Icon = config.icon;
 
   return (
-    <Card className="min-w-[280px] shrink-0">
+    <Card className="min-w-[280px] shrink-0 border-border/50">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${config.color}`} />

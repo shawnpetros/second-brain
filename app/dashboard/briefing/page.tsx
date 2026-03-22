@@ -69,40 +69,54 @@ export default function BriefingPage() {
         return (
           <article
             key={b.id}
-            className={`rounded-lg border bg-card p-6 ${i === 0 ? "border-primary/30" : ""}`}
+            className={`rounded-lg border bg-card p-5 md:p-6 ${i === 0 ? "border-amber-500/20 bg-amber-500/[0.02]" : "border-border/50"}`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sun className={`h-5 w-5 ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`} />
                 <h2 className="font-semibold">{dateStr}</h2>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{b.thought_count} thoughts</span>
-                <span>{b.model}</span>
-                {b.cost_usd && <span>${Number(b.cost_usd).toFixed(4)}</span>}
-                <span>{timeStr}</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">{b.thought_count} thoughts</span>
+                <span className="hidden sm:inline">|</span>
+                <span className="hidden sm:inline font-mono">{b.model}</span>
+                {b.cost_usd && <><span className="hidden sm:inline">|</span><span className="hidden sm:inline font-mono">${Number(b.cost_usd).toFixed(4)}</span></>}
               </div>
             </div>
 
-            <div className="prose prose-sm prose-invert max-w-none">
+            <div className="space-y-1">
               {b.content.split("\n").map((line, j) => {
                 if (line.startsWith("## ")) {
-                  return <h2 key={j} className="text-lg font-bold mt-4 mb-2">{line.replace("## ", "")}</h2>;
+                  return <h2 key={j} className="text-lg font-bold mt-5 mb-2 text-foreground border-b border-border/50 pb-1">{line.replace("## ", "")}</h2>;
                 }
                 if (line.startsWith("### ")) {
-                  return <h3 key={j} className="text-base font-semibold mt-3 mb-1">{line.replace("### ", "")}</h3>;
+                  return <h3 key={j} className="text-sm font-semibold uppercase tracking-wider mt-4 mb-1.5 text-muted-foreground">{line.replace("### ", "")}</h3>;
                 }
                 if (line.startsWith("- ")) {
-                  return <li key={j} className="ml-4 text-sm">{line.replace("- ", "")}</li>;
+                  const content = line.replace("- ", "");
+                  return (
+                    <div key={j} className="flex gap-2 ml-1 text-sm leading-relaxed">
+                      <span className="text-muted-foreground shrink-0 mt-1">-</span>
+                      <span dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>') }} />
+                    </div>
+                  );
                 }
                 if (/^\d+\.\s/.test(line)) {
-                  return <li key={j} className="ml-4 text-sm list-decimal">{line.replace(/^\d+\.\s/, "")}</li>;
+                  const num = line.match(/^(\d+)\./)?.[1];
+                  const content = line.replace(/^\d+\.\s/, "");
+                  return (
+                    <div key={j} className="flex gap-2 ml-1 text-sm leading-relaxed">
+                      <span className="text-amber-400 font-mono font-bold shrink-0 w-5 text-right">{num}.</span>
+                      <span dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>') }} />
+                    </div>
+                  );
                 }
-                if (line.startsWith("**") && line.endsWith("**")) {
-                  return <p key={j} className="font-semibold text-sm mt-2">{line.replace(/\*\*/g, "")}</p>;
-                }
-                if (line.trim() === "") return <br key={j} />;
-                return <p key={j} className="text-sm text-muted-foreground">{line}</p>;
+                if (line.trim() === "") return <div key={j} className="h-2" />;
+                return (
+                  <p key={j} className="text-sm text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>') }}
+                  />
+                );
               })}
             </div>
           </article>
