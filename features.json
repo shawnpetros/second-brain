@@ -204,8 +204,9 @@
     {
       "id": "feat-118",
       "name": "Nervous Center: Global CLAUDE.md hook",
-      "description": "Phase 4 — on Claude Code session start in any project dir, auto-fetch project context via /api/projects/[slug]/context and inject as context preamble.",
-      "status": "planned",
+      "description": "Phase 4 — SessionStart hook calls /api/brain/hook/project-context with repo path, injects brain context (milestones, tasks, decisions, insights, blocking edges) as additionalContext. BRAIN_API_KEY auth. 5s timeout. Fires on startup|resume.",
+      "status": "completed",
+      "completed": "2026-03-21",
       "priority": "P1",
       "source": "Nervous Center roadmap",
       "created": "2026-03-21"
