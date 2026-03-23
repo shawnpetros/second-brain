@@ -3,7 +3,7 @@ import { Client } from "@upstash/qstash";
 import { generateBriefing } from "@/lib/brain/briefing";
 import { sendPushNotification } from "@/lib/notifications/send";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * Generate endpoint — called by QStash (or directly by cron fallback).

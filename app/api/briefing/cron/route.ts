@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       },
       body: { trigger: "cron" },
       retries: 2,
-      timeout: 60,
+      timeout: 180,
     });
 
     return Response.json({ status: "queued", via: "qstash" });
