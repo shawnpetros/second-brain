@@ -8,6 +8,7 @@ import {
   queryPermissionOverrides,
   queryEdgesByThought,
   queryFailedActions,
+  queryCadences,
   type ThoughtRecord,
   type AlertItem,
   type EdgeRecord,
@@ -151,7 +152,8 @@ function buildBriefingPrompt(
   },
   scoredTasks: ScoredTask[],
   classifications: TaskClassification[],
-  failedActions: { thought_id: string; failure_reason: string | null }[]
+  failedActions: { thought_id: string; failure_reason: string | null }[],
+  cadences: ThoughtRecord[]
 ): string {
   const sections: string[] = [];
 
@@ -266,6 +268,16 @@ function buildBriefingPrompt(
     sections.push("");
   }
 
+  // Cadences (recurring patterns for daily planning)
+  if (cadences.length) {
+    const dayOfWeek = new Date().toLocaleDateString("en-US", { weekday: "long" });
+    sections.push(`## Recurring Cadences (today is ${dayOfWeek})`);
+    for (const c of cadences) {
+      sections.push(`- ${c.raw_text.slice(0, 200)}`);
+    }
+    sections.push("");
+  }
+
   // New edges
   if (data.newEdges.length) {
     sections.push(`## New Connections (${data.newEdges.length})`);
@@ -288,11 +300,17 @@ PRODUCE THIS FORMAT:
 
 ## Morning Briefing — {today's date}
 
+### YOUR PLATE TODAY
+The top 3-5 things Shawn needs to do with his human hours today. Not what the agent is handling — what HE needs to focus on. Rules:
+- Deadline items ALWAYS come first (interview tomorrow = #1, no debate)
+- Then highest urgency score items that are human_only or need approval
+- Include a rough time estimate for each (15min, 1hr, 2hr block)
+- Factor in the day of the week: Mondays = content day, prep days before interviews, client work days
+- Max 5 items. If the list is longer than 5, the bottom ones wait for tomorrow.
+- Be specific: "Draft 2 LinkedIn posts" not "work on content"
+
 ### Overdue & Forced Resolution
 Tasks that have exceeded 21 days without action. These MUST be resolved today — complete, snooze, or delete. No deferral.
-
-### Friction & Pain Points
-What's causing repeated rework, blocking progress, or generating the most noise without resolution?
 
 ### Actions Staged
 What the autonomous agent is working on right now. List what was auto-executed and what needs approval. If actions failed from the previous cycle, explain why and whether they'll be retried.
@@ -300,22 +318,22 @@ What the autonomous agent is working on right now. List what was auto-executed a
 ### Quick Wins
 Tasks under 5 minutes of effort — knock these out between meetings.
 
+### Friction & Pain Points
+What's causing repeated rework, blocking progress, or generating the most noise without resolution?
+
 ### Dropped Threads
 What was started or discussed but has gone quiet?
-
-### Priority Actions
-Numbered list (max 5) of the highest-leverage things to do today. Factor in urgency scores and deadlines.
 
 ### Pattern Intelligence
 Cross-project patterns, emerging themes, or connections between thoughts that might not be obvious.
 
 RULES:
 - Be direct and blunt. This is an intelligence brief, not a newsletter.
-- Never lead with celebration. Start with problems.
+- Never lead with celebration. Start with YOUR PLATE TODAY.
 - Refer to projects by slug. Include thought IDs when referencing specific items.
 - If an alert is aging, say exactly how many days and what the cost of inaction is.
 - If there's genuinely nothing to flag, say "Clean slate" and stop.
-- Under 600 words total.`;
+- Under 700 words total.`;
 
 // ── Main Pipeline ──
 
@@ -367,6 +385,9 @@ export async function generateBriefing(): Promise<BriefingResult> {
     }
   }
 
+  // 4b. Fetch cadences for daily planning context
+  const cadences = await queryCadences();
+
   // 5. Build enriched context for briefing prompt
   const context = buildBriefingPrompt(
     data,
@@ -375,7 +396,8 @@ export async function generateBriefing(): Promise<BriefingResult> {
     failedActions.map((a) => ({
       thought_id: a.thought_id,
       failure_reason: a.failure_reason,
-    }))
+    })),
+    cadences
   );
 
   // 6. Generate briefing with Sonnet

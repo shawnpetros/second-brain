@@ -39,8 +39,8 @@ function createServer(): McpServer {
       source: z.string().default("mcp").describe("Where this thought came from."),
       thought_type: z.enum([
         "decision", "insight", "meeting", "person_note",
-        "idea", "action_item", "reflection", "reference", "milestone",
-      ]).optional().describe("Optional type hint. If provided, overrides auto-classification. Use 'milestone' for accomplishments/shipped work, 'action_item' for remaining tasks."),
+        "idea", "action_item", "reflection", "reference", "milestone", "cadence",
+      ]).optional().describe("Optional type hint. If provided, overrides auto-classification. Use 'milestone' for accomplishments/shipped work, 'action_item' for remaining tasks, 'cadence' for recurring schedules/patterns."),
     },
     async ({ text, source, thought_type }) => ({
       content: [{ type: "text" as const, text: await capture(text, source, thought_type) }],

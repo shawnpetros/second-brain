@@ -867,6 +867,18 @@ export async function removePermissionOverride(actionType: string): Promise<bool
   return rows.length > 0;
 }
 
+// ── Cadences ──
+
+export async function queryCadences(): Promise<ThoughtRecord[]> {
+  const rows = await sql()`
+    SELECT id, raw_text, thought_type, status, people, topics, action_items, source, created_at, updated_at
+    FROM thoughts
+    WHERE thought_type = 'cadence' AND status = 'active'
+    ORDER BY created_at DESC
+  `;
+  return rows as ThoughtRecord[];
+}
+
 // ── Briefings (existing, enhanced) ──
 
 export async function gatherBriefingData(): Promise<{

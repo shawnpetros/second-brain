@@ -13,6 +13,7 @@ const VALID_TYPES = [
   "reflection",
   "reference",
   "milestone",
+  "cadence",
 ] as const;
 
 export type ThoughtType = (typeof VALID_TYPES)[number];
@@ -47,6 +48,7 @@ Guidelines:
 - "reflection": personal thinking, journaling, self-assessment
 - "reference": factual information, links, resources to remember
 - "milestone": a session summary, project accomplishment, shipped feature, or win. Use this for recaps of what was built/achieved/completed — NOT for tasks that still need doing
+- "cadence": a recurring pattern or schedule — something that happens on a regular basis (e.g., "content goes out Mondays", "weekly client check-in on Wednesdays", "run /content-batch every Monday morning"). NOT a one-time task.
 - Extract ONLY names that are clearly people (not companies, products, etc.)
 - Topics should be 1-3 word phrases, lowercase
 - "deadline": If the text mentions a due date, deadline, or time-sensitive date (e.g. "by Tuesday", "due March 25", "this week", "before the interview"), convert it to an absolute YYYY-MM-DD date. Use today's date for reference. Return null if no deadline is mentioned or implied.`;
