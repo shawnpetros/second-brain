@@ -1,23 +1,23 @@
 # Session Context
 
 ## Status
-- Autonomous Action Queue Phase 1: COMPLETE and deployed to production
-- 14/14 tasks done, 127 tests passing, pipeline verified end-to-end ($0.036/cycle)
-- First real briefing generated with 10 classifications, 3 planned actions, Sonnet-powered
+- Action Queue Phase 1 COMPLETE and deployed. 4AM cron active. First live briefing runs tomorrow.
+- SOUL.md shipped. Session-end hook fixed. Brain hygiene triage done (7 deleted, 2 replaced).
+- Daily focus ("YOUR PLATE TODAY") + cadence thought type added to briefing pipeline.
 
 ## In-Flight
-- Cron set to 4 AM PT (11 UTC) — first autonomous run tomorrow morning
-- 3 actions currently staged in approval queue (CSF complaint, attorney intake, Intel Brief recs)
-- Deadline backfill completed (5/23 tasks enriched)
+- 3 actions staged in approval queue from manual briefing run (CSF email, attorney intake, Intel Brief recs)
+- Tomorrow's 4AM briefing will be the first fully autonomous run with daily plate, cadences, and action dispatch
 
 ## Key Details
-- ANTHROPIC_API_KEY, VAPID keys all set in Vercel (prod/preview/dev)
-- Model IDs: `claude-sonnet-4-6` and `claude-opus-4-6` (no date suffix — API rejects dated variants)
-- Vercel deployment protection blocks manual API triggers — use local tsx or cron
-- Session-end hook still broken (captured as action item)
+- Model IDs: `claude-sonnet-4-6` and `claude-opus-4-6` (no date suffix)
+- VAPID keys configured in Vercel (all envs)
+- SessionEnd hook timeout: CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=15000 in ~/.exports
+- Cadence type requires migration 012 (applied)
+- Sequential thinking MCP confirmed working, connects on fresh session
 
 ## Next Steps
-1. Review staged actions in /dashboard/queue (CSF email, attorney intake)
-2. Phase 2 planning: artifact routing on approval, content pipeline convergence, Mac mini daemon
-3. Fix session-end hook
-4. Embedding migration (ada-002 → Voyage 3.5-large) — separate PR
+1. Review approval queue tomorrow morning (3 staged actions waiting)
+2. RLS migration (Extension Principle + RLS Principle adopted)
+3. Phase 2 planning: artifact routing, content pipeline convergence, Telegram bot
+4. Recursive self-improvement metrics (flag rate, approval rate fed back into prompts)

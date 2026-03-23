@@ -268,6 +268,45 @@
       "priority": "P1",
       "source": "Phase 1 wrapup session",
       "created": "2026-03-22"
+    },
+    {
+      "id": "feat-202",
+      "name": "SOUL.md personality layer",
+      "description": "British butler persona (Alfred + Jarvis + Q + Top Gear). Neurospicy-aware, ruthlessly prioritizing. Wired into agent system prompts for consistent voice. Email drafts use brand-voice (Shawn's voice), SOUL.md is agent-to-user communication.",
+      "status": "completed",
+      "completed": "2026-03-22",
+      "priority": "P1",
+      "source": "user request",
+      "created": "2026-03-22",
+      "notes": "Document created. Wiring into classifier/executor/briefing prompts is Phase 2."
+    },
+    {
+      "id": "feat-203",
+      "name": "Daily focus + cadence system",
+      "description": "YOUR PLATE TODAY section in briefing (top 3-5 human tasks, deadline-sorted, time-estimated). New 'cadence' thought type for recurring patterns (content Mondays, weekly check-ins). Cadences fed into briefing context with day-of-week awareness.",
+      "status": "completed",
+      "completed": "2026-03-22",
+      "priority": "P1",
+      "source": "user request",
+      "created": "2026-03-22"
+    },
+    {
+      "id": "feat-204",
+      "name": "RLS + Extension Principle migration",
+      "description": "Add Row-Level Security policies to all user-facing tables (thoughts, pending_actions, briefings, services, push_subscriptions, permission_overrides, thought_edges, projects). Architectural principle: new capabilities are additive tables referencing thoughts via edges, not modifications to thoughts table.",
+      "status": "planned",
+      "priority": "P1",
+      "source": "OB1 comparison + architectural decision",
+      "created": "2026-03-22"
+    },
+    {
+      "id": "feat-205",
+      "name": "Recursive self-improvement",
+      "description": "Brain learns from its own operational metrics. Tracks approval rate, flag rate, retry rate, time-to-review per action type. Monthly retrospective compares deltas. Feeds flag_reasons back into classifier prompts as negative examples. Auto-suggests permission tier promotions/demotions.",
+      "status": "planned",
+      "priority": "P2",
+      "source": "user request",
+      "created": "2026-03-22"
     }
   ]
 }
