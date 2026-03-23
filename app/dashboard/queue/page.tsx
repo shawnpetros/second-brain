@@ -48,6 +48,15 @@ export default function QueuePage() {
     await fetchActions();
   }
 
+  async function handleExecute(id: string) {
+    await fetch("/api/actions/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actionId: id }),
+    });
+    await fetchActions();
+  }
+
   // Categorize actions into sections
   const needsReview = actions.filter(
     (a) => a.status === "staged" && a.permission_tier !== "auto"
@@ -98,7 +107,7 @@ export default function QueuePage() {
     );
   }
 
-  const totalActive = needsReview.length + autoCompleted.length;
+  const totalActive = needsReview.length + autoCompleted.length + blocked.length;
 
   return (
     <div className="space-y-6">
@@ -107,7 +116,11 @@ export default function QueuePage() {
           <h1 className="text-2xl font-bold">Approval Queue</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalActive > 0
-              ? `${needsReview.length} for review, ${autoCompleted.length} auto-completed`
+              ? [
+                  needsReview.length > 0 && `${needsReview.length} for review`,
+                  autoCompleted.length > 0 && `${autoCompleted.length} auto-completed`,
+                  blocked.length > 0 && `${blocked.length} in progress`,
+                ].filter(Boolean).join(", ")
               : "No pending actions"}
           </p>
         </div>
@@ -141,6 +154,7 @@ export default function QueuePage() {
                     action={action}
                     onAction={handleAction}
                     onRetry={section.key === "failed" ? handleRetry : undefined}
+                    onExecute={section.key === "blocked" ? handleExecute : undefined}
                   />
                 ))}
               </div>

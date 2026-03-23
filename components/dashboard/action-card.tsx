@@ -20,6 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   Cpu,
+  Play,
+  Loader2,
   FileText,
   Search,
   BarChart3,
@@ -68,9 +70,10 @@ interface ActionCardProps {
     reason?: string
   ) => Promise<void>;
   onRetry?: (id: string, note?: string) => Promise<void>;
+  onExecute?: (id: string) => Promise<void>;
 }
 
-export function ActionCard({ action, onAction, onRetry }: ActionCardProps) {
+export function ActionCard({ action, onAction, onRetry, onExecute }: ActionCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [acting, setActing] = useState(false);
   const [retryNote, setRetryNote] = useState("");
@@ -104,6 +107,8 @@ export function ActionCard({ action, onAction, onRetry }: ActionCardProps) {
   const isFailed = ["failed", "rejected", "abandoned"].includes(action.status);
   const isAutoCompleted =
     action.status === "staged" && action.permission_tier === "auto";
+  const isPlanned = action.status === "planned";
+  const isExecuting = action.status === "executing";
 
   return (
     <Card className="border-border/50">
@@ -248,6 +253,28 @@ export function ActionCard({ action, onAction, onRetry }: ActionCardProps) {
                     Reject
                   </Button>
                 </>
+              )}
+
+              {isPlanned && onExecute && (
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    setActing(true);
+                    try { await onExecute(action.id); } finally { setActing(false); }
+                  }}
+                  disabled={acting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Play className="h-3.5 w-3.5 mr-1" />
+                  Run Now
+                </Button>
+              )}
+
+              {isExecuting && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Executing...
+                </div>
               )}
 
               {isAutoCompleted && (
