@@ -1,23 +1,23 @@
 # Session Context
 
 ## Status
-- Action Queue Phase 1 COMPLETE and deployed. 4AM cron active. First live briefing runs tomorrow.
-- SOUL.md shipped. Session-end hook fixed. Brain hygiene triage done (7 deleted, 2 replaced).
-- Daily focus ("YOUR PLATE TODAY") + cadence thought type added to briefing pipeline.
+- Action Queue Phase 1 COMPLETE and deployed. 4AM cron active. Penny is named and has her SOUL.md.
+- agents table created, agent_id on pending_actions, Penny seeded as default agent.
+- Daily focus + cadences wired into briefing. 3 cadences seeded for Monday.
 
 ## In-Flight
-- 3 actions staged in approval queue from manual briefing run (CSF email, attorney intake, Intel Brief recs)
-- Tomorrow's 4AM briefing will be the first fully autonomous run with daily plate, cadences, and action dispatch
+- 3 actions staged in approval queue (CSF email, attorney intake, Intel Brief recs)
+- Tomorrow 4AM: first fully autonomous briefing with daily plate, cadences, and Penny's voice
 
 ## Key Details
-- Model IDs: `claude-sonnet-4-6` and `claude-opus-4-6` (no date suffix)
-- VAPID keys configured in Vercel (all envs)
-- SessionEnd hook timeout: CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=15000 in ~/.exports
-- Cadence type requires migration 012 (applied)
-- Sequential thinking MCP confirmed working, connects on fresh session
+- SOUL.md lives at ~/.claude/SOUL.md (global) AND /projects/second-brain/SOUL.md
+- agents table seeded with Penny (id: 'penny', role: COO)
+- Migration 013 applied (agent_id + agents table)
+- RLS migration NOT YET DONE — first task next session
 
 ## Next Steps
-1. Review approval queue tomorrow morning (3 staged actions waiting)
-2. RLS migration (Extension Principle + RLS Principle adopted)
-3. Phase 2 planning: artifact routing, content pipeline convergence, Telegram bot
-4. Recursive self-improvement metrics (flag rate, approval rate fed back into prompts)
+1. RLS migration — add user_id + Row-Level Security to all tables (architectural principle, no app code changes)
+2. Wire SOUL.md into agent system prompts (briefing, classifier, executor)
+3. Multi-AI test — verify ChatGPT/Cursor can consume MCP or REST API
+4. Review approval queue (3 staged actions)
+5. Phase 2 planning: artifact routing, content pipeline convergence, team agents
